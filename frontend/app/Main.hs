@@ -9,6 +9,9 @@ module Main where
 import Miso
 import Miso.String
 
+-- | Other imports
+import Network.HTTP.Simple
+
 -- | Type synonym for an application model
 type Model = Int
 
@@ -18,6 +21,7 @@ data Action
   | SubtractOne
   | NoOp
   | SayHelloWorld
+  | FetchStocks
   deriving (Show, Eq)
 
 -- | Entry point for a miso application
@@ -37,13 +41,12 @@ updateModel :: Action -> Model -> Effect Action Model
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 updateModel NoOp m = noEff m
+updateModel FetchStocks = httpJSON "http://localhost:3000/quote/MSFT"
 updateModel SayHelloWorld m = m <# do
   putStrLn "Hello World" >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
- , text (ms x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
+   button_ [ onClick FetchStocks ] [ text "Get Stock Data" ]
  ]

@@ -1,10 +1,10 @@
 name: haskql
 version: 0.1.0.0
-github: 'githubuser/haskql'
+github: "githubuser/haskql"
 license: BSD3
-author: 'Author name here'
-maintainer: 'example@example.com'
-copyright: '2019 Author name here'
+author: "Author name here"
+maintainer: "example@example.com"
+copyright: "2019 Author name here"
 
 extra-source-files:
   - README.md
@@ -43,7 +43,7 @@ executables:
       - bytestring
       - yaml
       - haskql
-
+      - text
 tests:
   haskql-test:
     main: Spec.hs
