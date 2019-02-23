@@ -2,12 +2,6 @@
   mkDerivation,
   base,
   miso,
-  classy-prelude,
-  http-conduit,
-  aeson,
-  bytestring,
-  yaml,
-  text,
   http-client,
   stdenv
 }:
@@ -17,7 +11,7 @@ mkDerivation {
   src = ./.;
   isLibrary = false;
   isExecutable = true;
-  executableHaskellDepends = [ base miso http-client http-conduit aeson ];
+  executableHaskellDepends = [ base miso http-client ];
   description = "First miso app";
   license = stdenv.lib.licenses.bsd3;
 }
