@@ -14,12 +14,19 @@ import Data.Aeson
 import Data.Aeson.Types (FromJSON, Value)
 import JavaScript.Web.XMLHttpRequest
 import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Internal as BS
 import Data.Either
 import Debug.Trace
 
 t' x = trace x x
 
 -- | Type synonym for an application model
+
+data GlobalQuote = GlobalQuote { quoteField :: Quote } deriving (Eq, Show)
+
+instance FromJSON GlobalQuote where
+  parseJSON = withObject "GlobalQuote" $ \v -> GlobalQuote
+      <$> v .: "Global Quote"
 
 data Quote = Quote { symbol :: String
                    , changePercent :: String
@@ -30,11 +37,11 @@ data Quote = Quote { symbol :: String
 
 instance FromJSON Quote where
   parseJSON = withObject "Quote" $ \v -> Quote
-      <$> v .: "symbol"
-      <*> v .: "change percent"
-      <*> v .: "price"
-      <*> v .: "low"
-      <*> v .: "high"
+      <$> v .: "01. symbol"
+      <*> v .: "10. change percent"
+      <*> v .: "05. price"
+      <*> v .: "04. low"
+      <*> v .: "09. change"
 
 
 type Model = [Quote]
@@ -50,9 +57,14 @@ data Action
 
 fetchQuote :: IO(Either String Quote)
 fetchQuote = do 
-  Just json <- contents <$> xhrByteString req
-  putStrLn . show $ json
-  pure $ eitherDecodeStrict json
+  Just globalQuoteJson <- contents <$> xhrByteString req
+  putStrLn . show $ globalQuoteJson
+  let quoteJson = quoteField <$> eitherDecodeStrict globalQuoteJson
+  putStrLn . show $ quoteJson
+  -- case quoteJson of
+  --   Left a  -> putStrLn a
+  --   Right b -> putStrLn b
+  pure $ Left "finished"
   where
     req = Request { reqMethod = GET
                   , reqURI = "http://localhost:3000/quote/MSFT"
