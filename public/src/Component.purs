@@ -4,12 +4,19 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
+import Effect.Console
+import Data.Either (hush)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Affjax as AX
-import Affjax.ResponseFormat as AXResponse
+import Affjax.ResponseFormat as AXRF
+import Debug.Trace
+import Web.Event.Event (Event)
+import Web.Event.Event as Event
+
+t' x = trace ( show x ) (\_ -> x)
 
 type State =
   { loading :: Boolean
@@ -19,7 +26,7 @@ type State =
 
 data Query a
   = SetUsername String a
-  | MakeRequest a
+  | MakeRequest Event a
 
 ui :: H.Component HH.HTML Query Unit Void Aff
 ui =
@@ -36,7 +43,7 @@ ui =
 
   render :: State -> H.ComponentHTML Query
   render st =
-    HH.form_ $
+    HH.form_ [ HE.onSubmit (Just <<< MakeRequest)] $
       [ HH.h1_ [ HH.text "Lookup GitHub user" ]
       , HH.label_
           [ HH.div_ [ HH.text "Enter username:" ]
@@ -47,7 +54,6 @@ ui =
           ]
       , HH.button
           [ HP.disabled st.loading
-          , HE.onClick (HE.input_ MakeRequest)
           ]
           [ HH.text "Fetch info" ]
       , HH.p_
@@ -68,11 +74,12 @@ ui =
     SetUsername username next -> do
       H.modify_ (_ { username = username, result = Nothing :: Maybe String })
       pure next
-    MakeRequest next -> do
+    MakeRequest event next -> do
+      H.liftEffect $ Event.preventDefault event
       username <- H.gets _.username
       H.modify_ (_ { loading = true })
-      response <- H.liftAff $ AX.get AXResponse.String ("https://api.github.com/users/")
-      H.modify_ (_ { loading = false, result = Just response.response })
+      response <- H.liftAff $ AX.get AXRF.string ("https://api.github.com/users/" <> username)
+      H.modify_ (_ { loading = false, result = hush response.body })
       pure next
 
 
