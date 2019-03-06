@@ -32,6 +32,7 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
+import Network.Wai.Middleware.Cors          (simpleCors)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
@@ -69,7 +70,7 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ simpleCors . logWare $ defaultMiddlewaresNoLogging appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
