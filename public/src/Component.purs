@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
+import Effect.Class(liftEffect)
 import Effect.Console
 import Data.Either (hush)
 import Halogen as H
@@ -16,16 +17,15 @@ import Debug.Trace
 import Web.Event.Event (Event)
 import Web.Event.Event as Event
 
-t' x = trace ( show x ) (\_ -> x)
 
 type State =
   { loading :: Boolean
-  , username :: String
+  , symbol :: String
   , result :: Maybe String
   }
 
 data Query a
-  = SetUsername String a
+  = SetSymbol String a
   | MakeRequest a
 
 ui :: H.Component HH.HTML Query Unit Void Aff
@@ -39,17 +39,17 @@ ui =
   where
 
   initialState :: State
-  initialState = { loading: false, username: "", result: Nothing }
+  initialState = { loading: false, symbol: "", result: Nothing }
 
   render :: State -> H.ComponentHTML Query
   render st =
     HH.div_ $
-      [ HH.h1_ [ HH.text "Lookup GitHub user" ]
+      [ HH.h1_ [ HH.text "Lookup Stock Quote" ]
       , HH.label_
-          [ HH.div_ [ HH.text "Enter username:" ]
+          [ HH.div_ [ HH.text "Enter Stock Symbol:" ]
           , HH.input
-              [ HP.value st.username
-              , HE.onValueInput (HE.input SetUsername)
+              [ HP.value st.symbol
+              , HE.onValueInput (HE.input SetSymbol)
               ]
           ]
       , HH.button
@@ -72,18 +72,15 @@ ui =
 
   eval :: Query ~> H.ComponentDSL State Query Void Aff
   eval = case _ of
-    SetUsername username next -> do
-      H.modify_ (_ { username = username, result = Nothing :: Maybe String })
+    SetSymbol symbol next -> do
+      H.modify_ (_ { symbol = symbol, result = Nothing :: Maybe String })
       pure next
     MakeRequest next -> do
-      username <- H.gets _.username
+      symbol <- H.gets _.symbol
+      let reqUrl = "http://localhost:3000/stocks/" <> symbol
+      liftEffect <<< log $ reqUrl
       H.modify_ (_ { loading = true })
-      response <- H.liftAff $ AX.get AXRF.string ("https://api.github.com/users/" <> username)
+      response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
+      liftEffect <<< log $ show $ response.status
       H.modify_ (_ { loading = false, result = hush response.body })
       pure next
-
-
-
-    -- MakeRequest next -> do
-    --   response <- t' <<< H.liftAff $ AX.get AXResponse.String ("http://localhost:3000/stocks/MSFT")
-    --   pure next
