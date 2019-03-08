@@ -46,7 +46,7 @@ ui =
     HH.div_ $
       [ HH.h1_ [ HH.text "Lookup Stock Quote" ]
       , HH.label_
-          [ HH.div_ [ HH.text "Enter Stock Symbol:" ]
+          [ HH.div_ [ HH.text "Stock Symbol ::" ]
           , HH.input
               [ HP.value st.symbol
               , HE.onValueInput (HE.input SetSymbol)

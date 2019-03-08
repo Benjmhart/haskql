@@ -2,14 +2,15 @@
 
 ## current functionality
 
-running /server will prop up a scotty server on port 3000 that returns a stock quote
+Development Servers:
 
-running /frontend will currently fail - but should run a miso app that will request a stock quote from the server on button push
+running `./hastock/stack exec -- yesod devel` will start a development server for the backend.
+
+running `./public/purehmr` will start a hot reloading front end server - right now the new component is mounted below the old one - this will be addressed soon.
 
 ## Roadmap
 
-- flesh out miso app to display the reponse (expanding the app state to allow for maybe quote, then if the quote is a just, rendering to screen)
-- Wrap the restful api in a graphql layer on the server
-- perform the request as graphql query on the client
-- break up main functions on front end as seen in example spa
-- consider building out the app with shared models files as seen here: https://github.com/y-taka-23/miso-tutorial-app
+- add GraphQL query system
+- add a quote data type on the front end. Parse JSON response into the data type, display it
+- CSS
+- Deployment
