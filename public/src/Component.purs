@@ -14,8 +14,12 @@ import Halogen.HTML.Properties as HP
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Debug.Trace
-import Web.Event.Event (Event)
-import Web.Event.Event as Event
+import Web.Event.Event (type_, EventType(..), preventDefault)
+import Web.Event.Internal.Types (Event)
+import Web.UIEvent.MouseEvent (toEvent)
+
+inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
+inputR f x = Just $ (f x)
 
 
 type State =
@@ -27,6 +31,7 @@ type State =
 data Query a
   = SetSymbol String a
   | MakeRequest a
+  | PreventDefault Event (Query a)
 
 ui :: H.Component HH.HTML Query Unit Void Aff
 ui =
@@ -43,10 +48,10 @@ ui =
 
   render :: State -> H.ComponentHTML Query
   render st =
-    HH.div_ $
+    HH.form_ $
       [ HH.h1_ [ HH.text "Lookup Stock Quote" ]
       , HH.label_
-          [ HH.div_ [ HH.text "Stock Symbol ::" ]
+          [ HH.div_ [ HH.text "Stock Symbol :: " ]
           , HH.input
               [ HP.value st.symbol
               , HE.onValueInput (HE.input SetSymbol)
@@ -54,7 +59,9 @@ ui =
           ]
       , HH.button
           [ HP.disabled st.loading
-          , HE.onClick (HE.input_ MakeRequest)
+          , HE.onClick $inputR \e ->
+                          PreventDefault (toEvent e) $
+                          H.action $ MakeRequest
           ]
           [ HH.text "Fetch info" ]
       , HH.p_
@@ -78,9 +85,12 @@ ui =
     MakeRequest next -> do
       symbol <- H.gets _.symbol
       let reqUrl = "http://localhost:3000/stocks/" <> symbol
-      liftEffect <<< log $ reqUrl
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
-      liftEffect <<< log $ show $ response.status
       H.modify_ (_ { loading = false, result = hush response.body })
       pure next
+    PreventDefault e q -> do
+      let (EventType t) = type_ e
+      H.liftEffect $ preventDefault e
+      H.liftEffect $ log $ show t <> " default navigation prevented"
+      eval q
