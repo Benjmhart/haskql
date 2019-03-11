@@ -2,11 +2,12 @@ module Component (State, Query(..), ui) where
 
 import Prelude
 
+import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
+import Data.Either (hush)
 import Effect.Aff (Aff)
 import Effect.Class(liftEffect)
 import Effect.Console
-import Data.Either (hush)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -71,15 +72,26 @@ ui =
           [ HH.text "Fetch info" ]
       , HH.p_
           [ HH.text (if st.loading then "Working..." else "") ]
-      , HH.div_
-          case st.result of
-            Nothing -> []
-            Just res ->
-              [ HH.h2_
-                  [ HH.text "Response!" ]
-              -- , HH.pre_
-              --     [ HH.code_ [ HH.text res ] ]
-              ]
+      , HH.div_ $
+          concat [
+                    case st.error of
+                      Nothing -> []
+                      Just err -> [ HH.p_ [ HH.text (err) ] ]
+                 ,  case st.result of
+                      Nothing -> []
+                      Just q ->
+                        [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]
+                        , HH.p_ [ HH.text $ "price: " <> q.price ]
+                        , HH.p_ [ HH.text $ "open: " <> q.open ]
+                        , HH.p_ [ HH.text $ "high: " <> q.high ]
+                        , HH.p_ [ HH.text $ "low: " <> q.low ]
+                        , HH.p_ [ HH.text $ "volume: " <> q.volume ]
+                        , HH.p_ [ HH.text $ "latest trading day: " <> q.latestTradingDay ]
+                        , HH.p_ [ HH.text $ "previous close: " <> q.previousClose ]
+                        , HH.p_ [ HH.text $ "change: " <> q.change ]
+                        , HH.p_ [ HH.text $ "change percent: " <> q.changePercent ]
+                        ]
+                 ]
       ]
 
   --  TODO: pull out pure parts into their own functions
