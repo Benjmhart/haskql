@@ -2,7 +2,7 @@ module Component (State, Query(..), ui) where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isNothing )
 import Effect.Aff (Aff)
 import Effect.Class(liftEffect)
 import Effect.Console
@@ -13,19 +13,23 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
+import Simple.JSON as JSON
 import Debug.Trace
 import Web.Event.Event (type_, EventType(..), preventDefault)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 
+import Model.Quote
+
+-- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
 inputR f x = Just $ (f x)
-
 
 type State =
   { loading :: Boolean
   , symbol :: String
-  , result :: Maybe String
+  , result :: Maybe Quote
+  , error :: Maybe String
   }
 
 data Query a
@@ -44,14 +48,15 @@ ui =
   where
 
   initialState :: State
-  initialState = { loading: false, symbol: "", result: Nothing }
+  initialState = { loading: false, symbol: "", result: Nothing, error: Nothing}
 
+  -- TODO - break this up into smaller components
   render :: State -> H.ComponentHTML Query
   render st =
     HH.form_ $
       [ HH.h1_ [ HH.text "Lookup Stock Quote" ]
       , HH.label_
-          [ HH.div_ [ HH.text "Stock Symbol :: " ]
+          [ HH.div_ [ HH.text "Stock Symbol: " ]
           , HH.input
               [ HP.value st.symbol
               , HE.onValueInput (HE.input SetSymbol)
@@ -59,7 +64,7 @@ ui =
           ]
       , HH.button
           [ HP.disabled st.loading
-          , HE.onClick $inputR \e ->
+          , HE.onClick $ inputR \e ->
                           PreventDefault (toEvent e) $
                           H.action $ MakeRequest
           ]
@@ -71,23 +76,30 @@ ui =
             Nothing -> []
             Just res ->
               [ HH.h2_
-                  [ HH.text "Response:" ]
-              , HH.pre_
-                  [ HH.code_ [ HH.text res ] ]
+                  [ HH.text "Response!" ]
+              -- , HH.pre_
+              --     [ HH.code_ [ HH.text res ] ]
               ]
       ]
 
+  --  TODO: pull out pure parts into their own functions
   eval :: Query ~> H.ComponentDSL State Query Void Aff
   eval = case _ of
     SetSymbol symbol next -> do
-      H.modify_ (_ { symbol = symbol, result = Nothing :: Maybe String })
+      H.modify_ (_ { symbol = symbol
+                   , result = Nothing :: Maybe Quote
+                   , error = Nothing :: Maybe String 
+                   })
       pure next
     MakeRequest next -> do
       symbol <- H.gets _.symbol
       let reqUrl = "http://localhost:3000/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
-      H.modify_ (_ { loading = false, result = hush response.body })
+      let (q :: Maybe Quote) = removeNums <$> (
+        getQuote =<< hush <<< JSON.readJSON =<< hush response.body )
+      let e = if isNothing q then Just "Invalid Symbol" else Nothing
+      H.modify_ (_ { loading = false, result = q, error = e })
       pure next
     PreventDefault e q -> do
       let (EventType t) = type_ e
