@@ -1,13 +1,12 @@
 module Component (State, Query(..), ui) where
 
-import Prelude
+import Prelude (type (~>), Unit, Void, bind, const, discard, map, pure, show, ($), (<<<), (<>), (=<<))
 
 import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
 import Data.Either (hush)
 import Effect.Aff (Aff)
-import Effect.Class(liftEffect)
-import Effect.Console
+import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -15,12 +14,11 @@ import Halogen.HTML.Properties as HP
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Simple.JSON as JSON
-import Debug.Trace
 import Web.Event.Event (type_, EventType(..), preventDefault)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 
-import Model.Quote
+import Model.Quote (Quote(..), getQuoteWN, removeNums)
 
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
@@ -79,7 +77,7 @@ ui =
                       Just err -> [ HH.p_ [ HH.text (err) ] ]
                  ,  case st.result of
                       Nothing -> []
-                      Just q ->
+                      Just (Quote q) ->
                         [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]
                         , HH.p_ [ HH.text $ "price: " <> q.price ]
                         , HH.p_ [ HH.text $ "open: " <> q.open ]
@@ -108,8 +106,8 @@ ui =
       let reqUrl = "http://localhost:3000/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
-      let (q :: Maybe Quote) = removeNums <$> (
-        getQuote =<< hush <<< JSON.readJSON =<< hush response.body )
+      let (q :: Maybe Quote) = map removeNums $
+        getQuoteWN =<< hush <<< JSON.readJSON =<< hush response.body
       let e = if isNothing q then Just "Invalid Symbol" else Nothing
       H.modify_ (_ { loading = false, result = q, error = e })
       pure next

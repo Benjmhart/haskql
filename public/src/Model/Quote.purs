@@ -1,4 +1,4 @@
-module Model.Quote (Quote, QuoteResponse, QuoteWithNums, removeNums, getQuote)  where
+module Model.Quote where
 
 -- TODO make a newType wrapper for Quote
 
@@ -18,21 +18,23 @@ type QuoteWithNums =  { "01. symbol"              :: String
                       , "10. change percent"      :: String
                       }
 
-type Quote  = { "symbol"              :: String
-              , "open"                :: String
-              , "high"                :: String
-              , "low"                 :: String
-              , "price"               :: String
-              , "volume"              :: String
-              , "latestTradingDay"    :: String
-              , "previousClose"       :: String
-              , "change"              :: String
-              , "changePercent"       :: String
-              }
+type QuoteRecord  = { "symbol"              :: String
+                    , "open"                :: String
+                    , "high"                :: String
+                    , "low"                 :: String
+                    , "price"               :: String
+                    , "volume"              :: String
+                    , "latestTradingDay"    :: String
+                    , "previousClose"       :: String
+                    , "change"              :: String
+                    , "changePercent"       :: String
+                    }
+
+newtype Quote = Quote QuoteRecord
 
 -- TODO - map over object.entries to do this.
 removeNums :: QuoteWithNums -> Quote
-removeNums qwn =
+removeNums qwn = Quote
   { "symbol"           : qwn."01. symbol"
   , "open"             : qwn."02. open"              
   , "high"             : qwn."03. high"              
@@ -45,5 +47,5 @@ removeNums qwn =
   , "changePercent"    : qwn."10. change percent"    
   }
 
-getQuote :: QuoteResponse -> Maybe QuoteWithNums
-getQuote qr = qr."Global Quote"
+getQuoteWN :: QuoteResponse -> Maybe QuoteWithNums
+getQuoteWN qr = qr."Global Quote"
