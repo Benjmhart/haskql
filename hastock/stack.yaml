@@ -33,12 +33,12 @@ resolver: lts-12.26
 #  - auto-update
 #  - wai
 packages:
-- .
+  - .
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
-# extra-deps: []
-
+extra-deps:
+  - graphql-api-0.3.0@sha256:57555fc53e397d341045d315b7172025cf336b8e947247c05c9379dc6bf9e835
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
