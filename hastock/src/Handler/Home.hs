@@ -34,16 +34,35 @@ getStocksQuoteR symbol = do
     response <- httpJSON $ request
     return $ getResponseBody response
 
+-- | Nested Example
+type Query' = GQLAPI.Object "Query" '[] '[GQLAPI.Field "me" User]
+type User = GQLAPI.Object "User" '[] '[GQLAPI.Field "name" Text]
+
+user :: GQLR.Handler IO User
+user = pure name
+  where
+    name = pure "Mort"
+
+query :: GQLR.Handler IO Query'
+query = pure user
+
+postHelloGraphR :: Handler Value
+postHelloGraphR = do
+  body <- requireJsonBody :: Handler Value
+  print body
+  let res =  GQL.interpretAnonymousQuery @Query' query "{ me { name }}"
+  resJson <- liftIO $ toJSON <$> res
+  return resJson
+
+-- | Parameterized example
 type Hello = GQLAPI.Object "Hello" '[]
-  '[ GQLAPI.Argument "who" Text :> GQLAPI.Field "greeting" Text ]
+'[ GQLAPI.Argument "who" Text :> GQLAPI.Field "greeting" Text ]
 
 hello :: GQLR.Handler IO Hello
 hello = pure (\who -> pure ("Hello " <> who))
 
-
--- postHelloGraphR = GQL.interpretAnonymousQuery @Hello hello
-postHelloGraphR :: Handler Value
-postHelloGraphR = do
+postHelloGraphParamR :: Handler Value
+postHelloGraphParamR = do
   body <- requireJsonBody :: Handler Value
   print body
   let res =  GQL.interpretAnonymousQuery @Hello hello "{ greeting(who: \"oscar\") }"
