@@ -7,13 +7,16 @@
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE DataKinds              #-}
+{-# LANGUAGE ViewPatterns           #-}
 
 module Handler.Home where
 
 import Import
 import Network.HTTP.Simple
-import Data.Text (Text)
+import Data.Text (Text, toTitle)
+import Text.Read (readMaybe)
 import Data.Monoid ((<>))
+import Data.Char (isAlpha)
 import qualified GraphQL as GQL
 import qualified GraphQL.API as GQLAPI
 import GraphQL.API ((:>))
@@ -40,12 +43,38 @@ type Hello = GQLAPI.Object "Hello" '[]
 hello :: GQLR.Handler IO Hello
 hello = pure (\who -> pure ("Hello " <> who))
 
+data QueryType = Hello  -- | Quote etc...
+  deriving (Eq, Ord, Read, Show)
 
 -- postHelloGraphR = GQL.interpretAnonymousQuery @Hello hello
 postHelloGraphR :: Handler Value
 postHelloGraphR = do
   body <- requireJsonBody :: Handler Value
-  print body
-  let res =  GQL.interpretAnonymousQuery @Hello hello "{ greeting(who: \"oscar\") }"
-  resJson <- liftIO $ toJSON <$> res
-  return resJson
+  let (Just qString) = getQueryString body
+  let mQueryType     = getRootQuery qString 
+  let queryArgs      = getQueryArgs qString
+  print mQueryType
+  case mQueryType of
+    (Just Hello) -> do 
+      let res = GQL.interpretAnonymousQuery @Hello hello queryArgs
+      resJson <- liftIO $ toJSON <$> res
+      return resJson
+    _ -> do
+      let resJson = (String "Invalid Query")
+      return resJson
+    
+-- TODO - move these into a helper library for parsing
+getQueryArgs :: Text -> Text 
+getQueryArgs = dropWhile (not . (=='{')) . drop 1 . dropEnd 1
+
+getQueryString :: Value -> Maybe Text
+getQueryString (Object (m)) = do 
+  let (Just (String a)) = listToMaybe $ toList m
+  return a
+getQueryString _ = Nothing
+
+getFirstWord :: Text -> Text
+getFirstWord = toTitle . takeWhile (isAlpha) . dropWhile (not . isAlpha)
+
+getRootQuery :: Text -> Maybe QueryType
+getRootQuery tx = readMaybe . unpack =<< (getFirstWord <$> Just tx)
