@@ -47,7 +47,7 @@ type Hello = GQLAPI.Object "Hello" '[]
 
   -- this is failing because it isn't the correct type motherfucker!
 type QuoteGQL = GQLAPI.Object "QuoteGQL" '[]
-  '[ GQLAPI.Argument "symbol" Text :> GQLAPI.Field "globalQuote" GlobalQuote ]
+  '[ GQLAPI.Argument "symbol" Text :> GQLAPI.Field "globalQuote" QuoteR ]
   
 data GlobalQuote = GlobalQuote { quoteField :: Maybe QuoteRecord } deriving (Eq, Show, Generic)
 instance FromJSON GlobalQuote where
@@ -79,9 +79,6 @@ instance FromJSON QuoteRecord where
     <*> v .: "09. change"
     <*> v .: "10. change percent"
 
-type QuoteM = GQLAPI.Object "QuoteGQL" '[]
-    '[ GQLAPI.Argument "symbol" Text :> GQLAPI.Field "globalQuote" (Maybe QuoteR) ]
-
 type QuoteR =  GQLAPI.Object "QuoteR" '[] 
   '[ GQLAPI.Field  "symbol"           Text
    , GQLAPI.Field  "open"             Text
@@ -95,7 +92,7 @@ type QuoteR =  GQLAPI.Object "QuoteR" '[]
    , GQLAPI.Field  "changePercent"    Text
   ]
 
-makeQuoteR :: QuoteRecord -> Maybe (GQLV.Object' GQLV.ConstScalar)
+makeQuoteR :: QuoteRecord -> Maybe QuoteR
 makeQuoteR qr = GQLV.objectFromList 
   [ ( "symbol", TV.toValue $ symbol qr)
   , ( "open" ,  TV.toValue $ open qr) 
@@ -109,7 +106,10 @@ makeQuoteR qr = GQLV.objectFromList
   , ( "changePercent" , TV.toValue $ changePercent qr) 
   ]
 
-quote :: GQLR.Handler IO QuoteR
+makeQuoteGQL :: QuoteR -> QuoteGQL
+makeQuoteGQL qr = GQLV.objectFromList [("globalQuote", qr)]
+
+quote :: GQLR.Handler IO QuoteGQL
 quote = pure (\symbol -> do 
   -- print $ "symbol: " <> "\"" <> symbol <> "\""
   requestURL <- parseRequest "https://www.alphavantage.co/query"
@@ -119,7 +119,7 @@ quote = pure (\symbol -> do
                                       ] 
                                       requestURL
   response <- liftIO $ httpJSON $ request
-  let quoter = makeQuoteR =<< (quoteField =<< getResponseBody response)
+  quoter <- makeQuoteGQL <$> (makeQuoteR =<< (quoteField =<< getResponseBody response))
   return quoter
   )
 
@@ -144,7 +144,7 @@ postHelloGraphR = do
       resJson <- liftIO $ toJSON <$> res
       return resJson
     (Just Quote) -> do 
-      let res = GQL.interpretAnonymousQuery @QuoteR quote queryArgs
+      let res = GQL.interpretAnonymousQuery @QuoteGQL quote queryArgs
       --print $ "GQL RESPONSE OBJECT: " 
       resJson <- liftIO $ toJSON <$>res
       return resJson
