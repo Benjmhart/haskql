@@ -13,8 +13,9 @@ import Import
 import Network.HTTP.Simple
 import qualified Data.Aeson         as A
 
-getHomeR :: HandlerFor App Value
-getHomeR  = return $ object ["symbol" .= ("Hello World" :: Value)]
+getHomeR :: Handler ()
+getHomeR = do
+  sendFile "text/html" "static/dist/index.html"
 
 
 getStocksQuoteR :: Text -> HandlerFor App Value
