@@ -10,4 +10,6 @@ import Component (ui)
 main :: Effect Unit
 main = HA.runHalogenAff do
   body <- HA.awaitBody
+
+  -- run ReaderT..build 
   runUI ui unit body

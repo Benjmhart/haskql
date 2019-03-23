@@ -7,5 +7,4 @@
 /robots.txt RobotsR GET
 
 /                   HomeR GET
-/hellograph         HelloGraphR POST
 /stocks/#Text       StocksQuoteR GET

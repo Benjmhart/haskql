@@ -1,6 +1,6 @@
 module Component (State, Query(..), ui) where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, map, pure, show, ($), (<<<), (<>), (=<<))
+import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<), (<$>))
 
 import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
@@ -18,7 +18,7 @@ import Web.Event.Event (type_, EventType(..), preventDefault)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 
-import Model.Quote (Quote(..), getQuoteWN, removeNums)
+import Model.Quote (QuoteRecord, Quote(..))
 
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
@@ -79,15 +79,15 @@ ui =
                       Nothing -> []
                       Just (Quote q) ->
                         [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]
-                        , HH.p_ [ HH.text $ "price: " <> q.price ]
-                        , HH.p_ [ HH.text $ "open: " <> q.open ]
-                        , HH.p_ [ HH.text $ "high: " <> q.high ]
-                        , HH.p_ [ HH.text $ "low: " <> q.low ]
-                        , HH.p_ [ HH.text $ "volume: " <> q.volume ]
-                        , HH.p_ [ HH.text $ "latest trading day: " <> q.latestTradingDay ]
-                        , HH.p_ [ HH.text $ "previous close: " <> q.previousClose ]
-                        , HH.p_ [ HH.text $ "change: " <> q.change ]
-                        , HH.p_ [ HH.text $ "change percent: " <> q.changePercent ]
+                        , HH.p_  [ HH.text $ "price: " <> q.price ]
+                        , HH.p_  [ HH.text $ "open: " <> q.open ]
+                        , HH.p_  [ HH.text $ "high: " <> q.high ]
+                        , HH.p_  [ HH.text $ "low: " <> q.low ]
+                        , HH.p_  [ HH.text $ "volume: " <> q.volume ]
+                        , HH.p_  [ HH.text $ "latest trading day: " <> q.latestTradingDay ]
+                        , HH.p_  [ HH.text $ "previous close: " <> q.previousClose ]
+                        , HH.p_  [ HH.text $ "change: " <> q.change ]
+                        , HH.p_  [ HH.text $ "change percent: " <> q.changePercent ]
                         ]
                  ]
       ]
@@ -106,8 +106,9 @@ ui =
       let reqUrl = "http://localhost:3000/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
-      let (q :: Maybe Quote) = map removeNums $
-        getQuoteWN =<< hush <<< JSON.readJSON =<< hush response.body
+      let (qr :: Maybe QuoteRecord) = hush <<< JSON.readJSON =<< hush response.body
+      H.liftEffect $ log $ show qr
+      let (q :: Maybe Quote) = Quote <$> qr
       let e = if isNothing q then Just "Invalid Symbol" else Nothing
       H.modify_ (_ { loading = false, result = q, error = e })
       pure next
