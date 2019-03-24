@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+main() {
+    echo "WARNING: THIS WILL TRIGGER A GIT COMMIT"
+    cd public
+    npm run build:prod
+    cd ..
+    cd hastock
+    stack build
+    stack --local-bin-path ./dist install --ghc-options '-optl-static -fPIC'
+    cd ..
+    git add .
+    git commit -m "deployment"
+    git push heroku master
+}
+
+main
