@@ -11,6 +11,8 @@ You can edit this file as you like.
     , "debug"
     , "effect"
     , "halogen"
+    , "node-process"
+    , "routing"
     , "simple-json"
     ]
 , packages =

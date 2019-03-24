@@ -6,6 +6,7 @@ import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
 import Data.Either (hush)
 import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -17,13 +18,17 @@ import Simple.JSON as JSON
 import Web.Event.Event (type_, EventType(..), preventDefault)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
+import Control.Monad.Reader (class MonadAsk, asks)
 
 import Model.Quote (QuoteRecord, Quote(..))
+import Model.AppEnv( ApiUrl )
 
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
 inputR f x = Just $ (f x)
 
+
+-- TODO - result and error should just be captured as one Either value
 type State =
   { loading :: Boolean
   , symbol :: String
@@ -36,7 +41,10 @@ data Query a
   | MakeRequest a
   | PreventDefault Event (Query a)
 
-ui :: H.Component HH.HTML Query Unit Void Aff
+ui :: forall m r
+    . MonadAff m
+   => MonadAsk { apiUrl :: String | r } m
+   => H.Component HH.HTML Query Unit Void m
 ui =
   H.component
     { initialState: const initialState
@@ -93,7 +101,7 @@ ui =
       ]
 
   --  TODO: pull out pure parts into their own functions
-  eval :: Query ~> H.ComponentDSL State Query Void Aff
+  eval :: Query ~> H.ComponentDSL State Query Void m
   eval = case _ of
     SetSymbol symbol next -> do
       H.modify_ (_ { symbol = symbol
@@ -102,16 +110,18 @@ ui =
                    })
       pure next
     MakeRequest next -> do
+    --TODO - move  the API call here + parsing to a service file
       symbol <- H.gets _.symbol
-      let reqUrl = "http://localhost:3000/stocks/" <> symbol
+      apiUrl <- asks _.apiUrl
+      let reqUrl = apiUrl <> "/stocks/" <> symbol
       H.modify_ (_ { loading = true })
-      response <- H.liftAff $ AX.get AXRF.string ("http://localhost:3000/stocks/" <> symbol)
+      response <- H.liftAff $ AX.get AXRF.string (reqUrl)
       let (qr :: Maybe QuoteRecord) = hush <<< JSON.readJSON =<< hush response.body
-      H.liftEffect $ log $ show qr
       let (q :: Maybe Quote) = Quote <$> qr
       let e = if isNothing q then Just "Invalid Symbol" else Nothing
       H.modify_ (_ { loading = false, result = q, error = e })
       pure next
+      -- TODO Move this out to a helper lib
     PreventDefault e q -> do
       let (EventType t) = type_ e
       H.liftEffect $ preventDefault e

@@ -5,14 +5,13 @@ function main() {
   Array.from(body.children).forEach(element => {
     body.removeChild(element);
   });
-  Main.main();
+  const environment = process.env.ENVIRONMENT;
+  const apiUrl = process.env.API_URL;
+  Main.main(environment)(apiUrl)();
 }
 
 // if (module.hot) {
-//   module.hot.accept(function() {
-//     // console.log('running main again');
-//     // main();
-//   });
+//   module.hot.accept();
 // }
 
 console.log('starting');
