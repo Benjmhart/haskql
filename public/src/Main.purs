@@ -8,12 +8,9 @@ import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
 import Component as UI 
-import Data.Maybe (Maybe(..))
-import Effect.Console (log)
-import Effect.Ref as Ref
 import Routing.Hash (getHash)
 
-import Model.AppEnv(AppEnv, Environment, ApiUrl, AppM, runAppM )
+import Model.AppEnv (AppEnv, runAppM)
 
 -- | Run the app.
 main :: String -> String -> Effect Unit

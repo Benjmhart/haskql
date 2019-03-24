@@ -1,11 +1,10 @@
 module Component (State, Query(..), ui) where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<), (<$>))
+import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<))
 
 import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
 import Data.Either (hush)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Halogen as H
@@ -20,8 +19,7 @@ import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
-import Model.Quote (QuoteRecord, Quote(..))
-import Model.AppEnv( ApiUrl )
+import Model.Quote (Quote)
 
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
@@ -85,7 +83,7 @@ ui =
                       Just err -> [ HH.p_ [ HH.text (err) ] ]
                  ,  case st.result of
                       Nothing -> []
-                      Just (Quote q) ->
+                      Just (q) ->
                         [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]
                         , HH.p_  [ HH.text $ "price: " <> q.price ]
                         , HH.p_  [ HH.text $ "open: " <> q.open ]
@@ -113,11 +111,12 @@ ui =
     --TODO - move  the API call here + parsing to a service file
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
+      H.liftEffect $ log $ "api url in use: " <> apiUrl
       let reqUrl = apiUrl <> "/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string (reqUrl)
-      let (qr :: Maybe QuoteRecord) = hush <<< JSON.readJSON =<< hush response.body
-      let (q :: Maybe Quote) = Quote <$> qr
+      let rb = hush response.body
+      let (q :: Maybe Quote) = hush <<< JSON.readJSON =<< rb
       let e = if isNothing q then Just "Invalid Symbol" else Nothing
       H.modify_ (_ { loading = false, result = q, error = e })
       pure next
