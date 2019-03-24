@@ -1,1 +1,1 @@
-web: hastock/dist/hastock
+web: cd hastock && ./dist/hastock
