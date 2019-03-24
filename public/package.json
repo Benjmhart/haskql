@@ -1,14 +1,33 @@
 {
   "name": "hsql",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "better-npm-run start",
+    "build:prod": "better-npm-run build:prod"
+  },
+  "betterScripts": {
+    "start": {
+      "command": "./purehmr",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    "build:prod": {
+      "command": "spago build && parcel build index.html --experimental-scope-hoisting --no-source-maps --out-dir ../hastock/static",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "better-npm-run": "^0.1.1"
+  }
 }

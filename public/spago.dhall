@@ -10,7 +10,11 @@ You can edit this file as you like.
     , "console"
     , "debug"
     , "effect"
+    , "foreign"
     , "halogen"
+    , "lists"
+    , "node-process"
+    , "routing"
     , "simple-json"
     ]
 , packages =

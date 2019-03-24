@@ -4,7 +4,7 @@ module Model.Quote where
 
 import Data.Maybe (Maybe(..))
 
-type QuoteRecord  = { "symbol"              :: String
+type Quote  = { "symbol"              :: String
                     , "open"                :: String
                     , "high"                :: String
                     , "low"                 :: String
@@ -16,4 +16,4 @@ type QuoteRecord  = { "symbol"              :: String
                     , "changePercent"       :: String
                     }
 
-newtype Quote = Quote QuoteRecord
+

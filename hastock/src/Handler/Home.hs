@@ -42,6 +42,7 @@ getStocksQuoteR stockSymbol = do
   print stockSymbol
   requestURL <- parseRequest "https://www.alphavantage.co/query"
   let secrets = (decodeEither' $(embedFile "config/secrets.yml")) :: Either ParseException Secrets
+  print secrets
   makeRequest secrets requestURL
     where 
       makeRequest (Right secrets) rURL = do
@@ -52,7 +53,6 @@ getStocksQuoteR stockSymbol = do
                                             rURL
         response <- httpJSON $ request
         let gq = (getResponseBody $ response :: GlobalQuote)
-        print gq
         let qr = toJSON $ (quoteField $ gq :: QuoteRecord)
         print qr
         return qr
@@ -61,7 +61,7 @@ getStocksQuoteR stockSymbol = do
         let errorResponse = toJSON $ Error "Server error" 500
         return errorResponse
 
-data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Generic)
+data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Read, Generic)
 instance FromJSON GlobalQuote where
   parseJSON = A.withObject "GlobalQuote" $ \v -> GlobalQuote
       <$> v .: "Global Quote"
@@ -76,7 +76,7 @@ data QuoteRecord = QuoteRecord  { symbol              :: Text
                                 , previousClose       :: Text
                                 , change              :: Text
                                 , changePercent       :: Text
-                                } deriving (Eq, Show, Generic)
+                                } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON QuoteRecord where 
   parseJSON = A.withObject "Quote" $ \v -> QuoteRecord
@@ -92,3 +92,5 @@ instance FromJSON QuoteRecord where
     <*> v .: "10. change percent"
 instance ToJSON QuoteRecord where
   toEncoding = A.genericToEncoding A.defaultOptions
+
+
