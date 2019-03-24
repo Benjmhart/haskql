@@ -17,9 +17,13 @@ running `./deploy` from the root folder will compile the production halogen app,
 - variables for the halogen app are kept in two .env files in the public folder. the root index.js has variables process.env... that are replaced at bundle time with the values in the relevant .env file. these are not kept secret and can be committed. these variables are then passed into the purescript stack directly as arguments to the Main function.
 - secrets on the server are configured in hastock/config/secrets.yml, and any real secrets, such as API keys should be stored in environment variables both locally and in deployment.
 
+relevant server config/settings are:
+PORT - managed automatically by heroku, tells us what port our server needs to run on in order to be public
+APIKEY - our api key for the alphavantage stock api
+APPROOT - (server) - tells the server the domain in which it is running
+APIURL - (client) - tells the client whether it
+
 ## Roadmap
 
-- add GraphQL query system
-- add a quote data type on the front end. Parse JSON response into the data type, display it
-- CSS
-- Deployment
+- CSS/Componentization
+- POSTGRES/AUTH
