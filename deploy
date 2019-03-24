@@ -4,7 +4,7 @@ set -o errexit
 set -o nounset
 
 main() {
-    echo "WARNING: THIS WILL TRIGGER A GIT COMMIT"
+    echo "WARNING: THIS SCRIPT WILL TRIGGER A COMMIT & PUSH OVER ORIGIN AND HEROKU REMOTES"
     cd public
     npm run build:prod
     cd ..
@@ -13,7 +13,7 @@ main() {
     stack --local-bin-path ./dist install --ghc-options '-optl-static -fPIC'
     cd ..
     git add .
-    git commit -m "deployment"
+    git commit -m "DEPLOY"
     git push origin master
     git push heroku master
 }
