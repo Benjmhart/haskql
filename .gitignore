@@ -5,11 +5,9 @@ cabal.project.local
 .ghc.environment.*
 result*
 /node_modules/
-dist
 *~
 .DS_Store
-/.cache/
-/.dist
+/.cache/ 
 /.spago
 /output
 /public/.cache
