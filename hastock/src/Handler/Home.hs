@@ -3,78 +3,65 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE QuasiQuotes            #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE ViewPatterns           #-}
+{-# LANGUAGE DeriveGeneric          #-}
 
 module Handler.Home where
 
 import Import
 import Network.HTTP.Simple
-import Data.Text (Text, toTitle)
-import Text.Read (readMaybe)
-import Data.Monoid ((<>))
-import Data.Char (isAlpha)
-import qualified GraphQL as GQL
-import qualified GraphQL.API as GQLAPI
-import GraphQL.API ((:>))
-import qualified GraphQL.Resolver as GQLR -- we mostly care about Handler
+import qualified Data.Aeson         as A
 
-getHomeR :: HandlerFor App Value
-getHomeR  = return $ object ["symbol" .= ("Hello World" :: Value)]
+getHomeR :: Handler ()
+getHomeR = do
+  sendFile "text/html" "static/dist/index.html"
 
 
 getStocksQuoteR :: Text -> HandlerFor App Value
-getStocksQuoteR symbol = do
-    requestURL <- parseRequest "https://www.alphavantage.co/query"
-    let request = setRequestQueryString [ ("function", Just "GLOBAL_QUOTE")
-                                        , ("symbol", Just . encodeUtf8 $ symbol)
-                                        , ("apikey", Just "V31DZE26DJHKTH7A")
-                                        ] 
-                                        requestURL
-    response <- httpJSON $ request
-    return $ getResponseBody response
+getStocksQuoteR stockSymbol = do
+  print stockSymbol
+  requestURL <- parseRequest "https://www.alphavantage.co/query"
+  let request = setRequestQueryString [ ("function", Just "GLOBAL_QUOTE")
+                                      , ("symbol", Just . encodeUtf8 $ stockSymbol)
+                                      , ("apikey", Just "V31DZE26DJHKTH7A")
+                                      ] 
+                                      requestURL
+  response <- httpJSON $ request
+  let gq = (getResponseBody $ response :: GlobalQuote)
+  print gq
+  let qr = toJSON $ (quoteField $ gq :: QuoteRecord)
+  print qr
+  return qr
 
-type Hello = GQLAPI.Object "Hello" '[]
-  '[ GQLAPI.Argument "who" Text :> GQLAPI.Field "greeting" Text ]
+data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Generic)
+instance FromJSON GlobalQuote where
+  parseJSON = A.withObject "GlobalQuote" $ \v -> GlobalQuote
+      <$> v .: "Global Quote"
 
-hello :: GQLR.Handler IO Hello
-hello = pure (\who -> pure ("Hello " <> who))
+data QuoteRecord = QuoteRecord  { symbol              :: Text
+                                , open                :: Text
+                                , high                :: Text
+                                , low                 :: Text
+                                , price               :: Text
+                                , volume              :: Text
+                                , latestTradingDay    :: Text
+                                , previousClose       :: Text
+                                , change              :: Text
+                                , changePercent       :: Text
+                                } deriving (Eq, Show, Generic)
 
-data QueryType = Hello  -- | Quote etc...
-  deriving (Eq, Ord, Read, Show)
-
--- postHelloGraphR = GQL.interpretAnonymousQuery @Hello hello
-postHelloGraphR :: Handler Value
-postHelloGraphR = do
-  body <- requireJsonBody :: Handler Value
-  let (Just qString) = getQueryString body
-  let mQueryType     = getRootQuery qString 
-  let queryArgs      = getQueryArgs qString
-  print mQueryType
-  case mQueryType of
-    (Just Hello) -> do 
-      let res = GQL.interpretAnonymousQuery @Hello hello queryArgs
-      resJson <- liftIO $ toJSON <$> res
-      return resJson
-    _ -> do
-      let resJson = (String "Invalid Query")
-      return resJson
-    
--- TODO - move these into a helper library for parsing
-getQueryArgs :: Text -> Text 
-getQueryArgs = dropWhile (not . (=='{')) . drop 1 . dropEnd 1
-
-getQueryString :: Value -> Maybe Text
-getQueryString (Object (m)) = do 
-  let (Just (String a)) = listToMaybe $ toList m
-  return a
-getQueryString _ = Nothing
-
-getFirstWord :: Text -> Text
-getFirstWord = toTitle . takeWhile (isAlpha) . dropWhile (not . isAlpha)
-
-getRootQuery :: Text -> Maybe QueryType
-getRootQuery tx = readMaybe . unpack =<< (getFirstWord <$> Just tx)
+instance FromJSON QuoteRecord where 
+  parseJSON = A.withObject "Quote" $ \v -> QuoteRecord
+    <$> v .: "01. symbol"
+    <*> v .: "02. open"
+    <*> v .: "03. high"
+    <*> v .: "04. low"
+    <*> v .: "05. price"
+    <*> v .: "06. volume"
+    <*> v .: "07. latest trading day"
+    <*> v .: "08. previous close"
+    <*> v .: "09. change"
+    <*> v .: "10. change percent"
+instance ToJSON QuoteRecord where
+  toEncoding = A.genericToEncoding A.defaultOptions
