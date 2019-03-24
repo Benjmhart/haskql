@@ -18,7 +18,7 @@
       }
     },
     "build:prod": {
-      "command": "spago build && parcel build index.html --experimental-scope-hoisting --no-source-maps --out-dir ../hastock/static/dist",
+      "command": "spago build &&  rm -rf  ../hastock/static/* && parcel build index.html --no-source-maps --public-url ./ --out-dir ../hastock/static",
       "env": {
         "NODE_ENV": "production"
       }
@@ -29,5 +29,8 @@
   "description": "",
   "dependencies": {
     "better-npm-run": "^0.1.1"
+  },
+  "devDependencies": {
+    "cssnano": "^4.1.10"
   }
 }

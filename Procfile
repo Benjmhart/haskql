@@ -1,0 +1,1 @@
+web: hastock/dist/hastock

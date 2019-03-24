@@ -10,9 +10,4 @@ function main() {
   Main.main(environment)(apiUrl)();
 }
 
-// if (module.hot) {
-//   module.hot.accept();
-// }
-
-console.log('starting');
 main();

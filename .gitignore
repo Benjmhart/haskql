@@ -13,3 +13,4 @@ dist
 /.spago
 /output
 /public/.cache
+./hastock/.stack-work/
