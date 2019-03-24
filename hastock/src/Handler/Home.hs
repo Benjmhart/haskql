@@ -28,12 +28,10 @@ getStocksQuoteR stockSymbol = do
                                       requestURL
   response <- httpJSON $ request
   let gq = (getResponseBody $ response :: GlobalQuote)
-  print gq
   let qr = toJSON $ (quoteField $ gq :: QuoteRecord)
-  print qr
   return qr
 
-data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Generic)
+data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Read, Generic)
 instance FromJSON GlobalQuote where
   parseJSON = A.withObject "GlobalQuote" $ \v -> GlobalQuote
       <$> v .: "Global Quote"
@@ -48,7 +46,7 @@ data QuoteRecord = QuoteRecord  { symbol              :: Text
                                 , previousClose       :: Text
                                 , change              :: Text
                                 , changePercent       :: Text
-                                } deriving (Eq, Show, Generic)
+                                } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON QuoteRecord where 
   parseJSON = A.withObject "Quote" $ \v -> QuoteRecord
@@ -64,3 +62,5 @@ instance FromJSON QuoteRecord where
     <*> v .: "10. change percent"
 instance ToJSON QuoteRecord where
   toEncoding = A.genericToEncoding A.defaultOptions
+
+

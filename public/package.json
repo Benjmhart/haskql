@@ -18,7 +18,7 @@
       }
     },
     "build:prod": {
-      "command": "spago build && parcel build index.html",
+      "command": "spago build && parcel build index.html --experimental-scope-hoisting --no-source-maps --out-dir ../hastock/static",
       "env": {
         "NODE_ENV": "production"
       }
