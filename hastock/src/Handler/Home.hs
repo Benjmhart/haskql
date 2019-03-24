@@ -11,28 +11,55 @@ module Handler.Home where
 
 import Import
 import Network.HTTP.Simple
-import qualified Data.Aeson         as A
+import Data.FileEmbed                   (embedFile)
+import qualified Data.Aeson             as A
+import Data.Yaml                        (decodeEither', ParseException)
 
 getHomeR :: Handler ()
 getHomeR = do
   sendFile "text/html" "static/dist/index.html"
 
 
+data Secrets = Secrets { apiKey  :: Text
+                       , secret1 :: Text
+                       , secret2 :: Text
+                       } deriving Show
+
+instance FromJSON Secrets where
+    parseJSON = A.withObject "Secrets" $ \v -> Secrets
+        <$> v .: "apiKey"
+        <*> v .: "secret1"
+        <*> v .: "secret2"
+
+data Error = Error { message :: Text
+                   , statusCode :: Int
+                   }
+instance ToJSON Error where
+  toJSON (Error m sC) = object ["message" .= m, "statusCode" .= sC]
+
 getStocksQuoteR :: Text -> HandlerFor App Value
 getStocksQuoteR stockSymbol = do
   print stockSymbol
   requestURL <- parseRequest "https://www.alphavantage.co/query"
-  let request = setRequestQueryString [ ("function", Just "GLOBAL_QUOTE")
-                                      , ("symbol", Just . encodeUtf8 $ stockSymbol)
-                                      , ("apikey", Just "V31DZE26DJHKTH7A")
-                                      ] 
-                                      requestURL
-  response <- httpJSON $ request
-  let gq = (getResponseBody $ response :: GlobalQuote)
-  print gq
-  let qr = toJSON $ (quoteField $ gq :: QuoteRecord)
-  print qr
-  return qr
+  let secrets = (decodeEither' $(embedFile "config/secrets.yml")) :: Either ParseException Secrets
+  makeRequest secrets requestURL
+    where 
+      makeRequest (Right secrets) rURL = do
+        let request = setRequestQueryString [ ("function", Just "GLOBAL_QUOTE")
+                                            , ("symbol", Just . encodeUtf8 $ stockSymbol)
+                                            , ("apikey", Just . encodeUtf8 . apiKey $ secrets)
+                                            ] 
+                                            rURL
+        response <- httpJSON $ request
+        let gq = (getResponseBody $ response :: GlobalQuote)
+        print gq
+        let qr = toJSON $ (quoteField $ gq :: QuoteRecord)
+        print qr
+        return qr
+      makeRequest (Left exception) _ = do
+        print exception
+        let errorResponse = toJSON $ Error "Server error" 500
+        return errorResponse
 
 data GlobalQuote = GlobalQuote { quoteField :: QuoteRecord } deriving (Eq, Show, Generic)
 instance FromJSON GlobalQuote where
