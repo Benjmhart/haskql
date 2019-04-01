@@ -5,6 +5,9 @@
 
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
+/                          HomeR GET
+/index.js                  HomeJSR GET
 
-/                   HomeR GET
-/stocks/#Text       StocksQuoteR GET
+/api/v1/stocks/#Text       QuoteR GET
+
+

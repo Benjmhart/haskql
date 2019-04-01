@@ -1,5 +1,4 @@
 .stack-work/
-haskql.cabal
 dist-newstyle/
 cabal.project.local
 .ghc.environment.*
