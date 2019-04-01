@@ -31,7 +31,7 @@ main env apiUrl = HA.runHalogenAff do
       -- , user:        currentUser
       }
     rootComponent :: H.Component HH.HTML SS.Query Unit Void Aff
-    rootComponent = H.hoist (runAppM appEnv) SS.ui
+    rootComponent = H.hoist (runAppM appEnv) SS.component
   --
   -- run ReaderT..build 
   halogenIO <- runUI rootComponent unit body
