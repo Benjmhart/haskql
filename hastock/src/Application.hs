@@ -76,6 +76,7 @@ makeApplication foundation = do
     appPlain <- toWaiAppPlain foundation
     return $ makeSpaRoutes . simpleCors . logWare $ defaultMiddlewaresNoLogging appPlain
 
+-- TODO: possibly publish this as a helper middleware
 makeSpaRoutes :: Middleware
 makeSpaRoutes = 
   routedMiddleware ( not . ("api" `elem`) ) $ rewritePureWithQueries rw
