@@ -109,13 +109,25 @@ let additions =
 -}
 
 let mkPackage =
-      https://raw.githubusercontent.com/spacchetti/spacchetti/20190131/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
+      https://raw.githubusercontent.com/purescript/package-sets/psc-0.12.3-20190330/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
 
 let upstream =
-      https://raw.githubusercontent.com/spacchetti/spacchetti/20190131/src/packages.dhall sha256:f6caac8189158d4d7305d5666553f307eeec3c281c002cb602a4e207e4bad939
+      https://raw.githubusercontent.com/purescript/package-sets/psc-0.12.3-20190330/src/packages.dhall sha256:cb0cdde5926cfdff5bd17bb2508a85b5eee794088f253f59f884766828ba722c
 
 let overrides = {=}
 
-let additions = {=}
+let additions = 
+  { slug =
+    mkPackage
+      [ "prelude"
+      , "maybe"
+      , "strings"
+      , "unicode"
+      , "generics-rep"
+      , "argonaut-codecs"
+      ]
+      "https://github.com/thomashoneyman/purescript-slug.git"
+      "v0.2.0"
+  }
 
 in  upstream ⫽ overrides ⫽ additions

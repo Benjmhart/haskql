@@ -112,7 +112,7 @@ component =
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
       H.liftEffect $ log $ "api url in use: " <> apiUrl
-      let reqUrl = apiUrl <> "/api/v1/stocks/" <> symbol
+      let reqUrl = apiUrl <> "/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string (reqUrl)
       let rb = hush response.body

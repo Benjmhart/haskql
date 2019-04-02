@@ -7,7 +7,8 @@ function main() {
   });
   const environment = process.env.ENVIRONMENT;
   const apiUrl = process.env.API_URL;
-  Main.main(environment)(apiUrl)();
+  const baseUrl = process.env.BASE_URL;
+  Main.main(environment)(apiUrl)(baseUrl)();
 }
 
 main();
