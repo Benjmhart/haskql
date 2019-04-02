@@ -83,9 +83,11 @@ makeSpaRoutes =
     where 
       rw :: PathsAndQueries -> RequestHeaders -> PathsAndQueries
       rw (["favicon.ico"], queries) _ = (["favicon.ico"], queries)
-      rw (["robots.txt"], queries) _ = (["index.js"], queries)
-      rw (["index.js"], queries) _ = (["index.js"], queries)
-      rw (_ , queries) _ = ([], queries)
+      rw (["robots.txt"], queries) _  = (["robots.txt"], queries)
+      rw (["index.js"], queries) _    = (["index.js"], queries)
+      rw (paths , queries) _ 
+        | "index.js" `elem` paths       = (["index.js"], queries)
+        | otherwise                     = ([], queries)
 
 
 makeLogWare :: App -> IO Middleware
