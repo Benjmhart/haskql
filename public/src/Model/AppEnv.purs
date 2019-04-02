@@ -27,7 +27,7 @@ type AppEnv =
   { logLevel    :: LogLevel
   , apiUrl      :: ApiUrl
   , baseUrl     :: BaseUrl
-  , currentUser :: Ref (Maybe String)
+  , currentUser :: Ref (Maybe String) -- TODO make a User Type
   } 
 
 -- type User = {}
