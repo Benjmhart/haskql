@@ -54,6 +54,7 @@ library
     , foreign-store
     , graphql-api
     , hjsmin >=0.1 && <0.3
+    , http-types
     , http-client-tls >=0.3 && <0.4
     , http-conduit >=2.3 && <2.4
     , monad-control >=0.3 && <1.1
