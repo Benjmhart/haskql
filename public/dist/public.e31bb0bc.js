@@ -102145,6 +102145,8 @@ var Affjax = require("../Affjax/index.js");
 
 var Affjax_ResponseFormat = require("../Affjax.ResponseFormat/index.js");
 
+var Capability_Navigate = require("../Capability.Navigate/index.js");
+
 var Control_Applicative = require("../Control.Applicative/index.js");
 
 var Control_Bind = require("../Control.Bind/index.js");
@@ -102190,6 +102192,8 @@ var Halogen_HTML_Properties = require("../Halogen.HTML.Properties/index.js");
 var Halogen_Query = require("../Halogen.Query/index.js");
 
 var Halogen_Query_HalogenM = require("../Halogen.Query.HalogenM/index.js");
+
+var Model_Route = require("../Model.Route/index.js");
 
 var Prelude = require("../Prelude/index.js");
 
@@ -102266,6 +102270,20 @@ var PreventDefault = function () {
   return PreventDefault;
 }();
 
+var GoHome = function () {
+  function GoHome(value0) {
+    this.value0 = value0;
+  }
+
+  ;
+
+  GoHome.create = function (value0) {
+    return new GoHome(value0);
+  };
+
+  return GoHome;
+}();
+
 var inputR = function inputR(f) {
   return function (x) {
     return Data_Maybe.Just.create(f(x));
@@ -102273,122 +102291,134 @@ var inputR = function inputR(f) {
 };
 
 var component = function component(dictMonadAff) {
-  return function (dictMonadAsk) {
-    var render = function render(st) {
-      return Halogen_HTML_Elements.form_([Halogen_HTML_Elements.h1_([Halogen_HTML_Core.text("Register")]), Halogen_HTML_Elements.label_([Halogen_HTML_Elements.div_([Halogen_HTML_Core.text("email: ")]), Halogen_HTML_Elements.input([Halogen_HTML_Properties.value(st.email), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(SetEmail.create))])]), Halogen_HTML_Elements.button([Halogen_HTML_Properties.disabled(st.loading), Halogen_HTML_Events.onClick(inputR(function (e) {
-        return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(Submit.create));
-      }))])([Halogen_HTML_Core.text("submit")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(function () {
-        if (st.loading) {
-          return "Working...";
-        }
-
-        ;
-        return "";
-      }())]), Halogen_HTML_Elements.div_(function () {
-        if (st.error instanceof Data_Maybe.Nothing) {
-          return [];
-        }
-
-        ;
-
-        if (st.error instanceof Data_Maybe.Just) {
-          return [Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(st.error.value0)])];
-        }
-
-        ;
-        throw new Error("Failed pattern match at Component.Register (line 87, column 11 - line 89, column 52): " + [st.error.constructor.name]);
-      }())]);
-    };
-
-    var initialState = {
-      loading: false,
-      email: "",
-      password: "",
-      error: Data_Maybe.Nothing.value
-    };
-
-    var $$eval = function $$eval(v) {
-      if (v instanceof SetEmail) {
-        return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
-          var $16 = {};
-
-          for (var $17 in v1) {
-            if ({}.hasOwnProperty.call(v1, $17)) {
-              $16[$17] = v1[$17];
-            }
-
-            ;
+  return function (dictNavigate) {
+    return function (dictMonadAsk) {
+      var render = function render(st) {
+        return Halogen_HTML_Elements.form_([Halogen_HTML_Elements.a([Halogen_HTML_Events.onClick(inputR(function (e) {
+          return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(GoHome.create));
+        }))])([Halogen_HTML_Core.text("Home")]), Halogen_HTML_Elements.h1_([Halogen_HTML_Core.text("Register")]), Halogen_HTML_Elements.label_([Halogen_HTML_Elements.div_([Halogen_HTML_Core.text("email: ")]), Halogen_HTML_Elements.input([Halogen_HTML_Properties.value(st.email), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(SetEmail.create))])]), Halogen_HTML_Elements.label_([Halogen_HTML_Elements.div_([Halogen_HTML_Core.text("Password:")]), Halogen_HTML_Elements.input([Halogen_HTML_Properties.value(st.password), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(SetEmail.create))])]), Halogen_HTML_Elements.button([Halogen_HTML_Properties.disabled(st.loading), Halogen_HTML_Events.onClick(inputR(function (e) {
+          return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(Submit.create));
+        }))])([Halogen_HTML_Core.text("submit")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(function () {
+          if (st.loading) {
+            return "Working...";
           }
 
           ;
-          $16.email = v.value0;
-          return $16;
-        }))(function () {
-          return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
-        });
-      }
-
-      ;
-
-      if (v instanceof SetPassword) {
-        return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
-          var $21 = {};
-
-          for (var $22 in v1) {
-            if ({}.hasOwnProperty.call(v1, $22)) {
-              $21[$22] = v1[$22];
-            }
-
-            ;
+          return "";
+        }())]), Halogen_HTML_Elements.div_(function () {
+          if (st.error instanceof Data_Maybe.Nothing) {
+            return [];
           }
 
           ;
-          $21.password = v.value0;
-          return $21;
-        }))(function () {
-          return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
-        });
-      }
 
-      ;
+          if (st.error instanceof Data_Maybe.Just) {
+            return [Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(st.error.value0)])];
+          }
 
-      if (v instanceof Submit) {
-        return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
-          return v1.email;
-        }))(function (v1) {
-          return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
-            return v2.password;
-          }))(function (v2) {
-            return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_Reader_Class.asks(Halogen_Query_HalogenM.monadAskHalogenM(dictMonadAsk))(function (v3) {
-              return v3.apiUrl;
-            }))(function (v3) {
-              return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+          ;
+          throw new Error("Failed pattern match at Component.Register (line 96, column 11 - line 98, column 52): " + [st.error.constructor.name]);
+        }())]);
+      };
+
+      var initialState = {
+        loading: false,
+        email: "",
+        password: "",
+        error: Data_Maybe.Nothing.value
+      };
+
+      var $$eval = function $$eval(v) {
+        if (v instanceof SetEmail) {
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+            var $17 = {};
+
+            for (var $18 in v1) {
+              if ({}.hasOwnProperty.call(v1, $18)) {
+                $17[$18] = v1[$18];
+              }
+
+              ;
+            }
+
+            ;
+            $17.email = v.value0;
+            return $17;
+          }))(function () {
+            return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
+          });
+        }
+
+        ;
+
+        if (v instanceof SetPassword) {
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+            var $22 = {};
+
+            for (var $23 in v1) {
+              if ({}.hasOwnProperty.call(v1, $23)) {
+                $22[$23] = v1[$23];
+              }
+
+              ;
+            }
+
+            ;
+            $22.password = v.value0;
+            return $22;
+          }))(function () {
+            return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
+          });
+        }
+
+        ;
+
+        if (v instanceof Submit) {
+          return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+            return v1.email;
+          }))(function (v1) {
+            return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+              return v2.password;
+            }))(function (v2) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_Reader_Class.asks(Halogen_Query_HalogenM.monadAskHalogenM(dictMonadAsk))(function (v3) {
+                return v3.apiUrl;
+              }))(function (v3) {
+                return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+              });
             });
           });
-        });
-      }
+        }
 
-      ;
+        ;
 
-      if (v instanceof PreventDefault) {
-        var v1 = Web_Event_Event.type_(v.value0);
-        return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Web_Event_Event.preventDefault(v.value0)))(function () {
-          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log(Data_Show.show(Data_Show.showString)(v1) + " default navigation prevented")))(function () {
-            return $$eval(v.value1);
+        if (v instanceof PreventDefault) {
+          var v1 = Web_Event_Event.type_(v.value0);
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Web_Event_Event.preventDefault(v.value0)))(function () {
+            return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log(Data_Show.show(Data_Show.showString)(v1) + " default navigation prevented")))(function () {
+              return $$eval(v.value1);
+            });
           });
-        });
-      }
+        }
 
-      ;
-      throw new Error("Failed pattern match at Component.Register (line 94, column 10 - line 120, column 12): " + [v.constructor.name]);
+        ;
+
+        if (v instanceof GoHome) {
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Capability_Navigate.navigate(Capability_Navigate.navigateHalogenM(dictNavigate))(Model_Route.Home.value))(function () {
+            return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+          });
+        }
+
+        ;
+        throw new Error("Failed pattern match at Component.Register (line 103, column 10 - line 132, column 12): " + [v.constructor.name]);
+      };
+
+      return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
+        initialState: Data_Function["const"](initialState),
+        render: render,
+        "eval": $$eval,
+        receiver: Data_Function["const"](Data_Maybe.Nothing.value)
+      });
     };
-
-    return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
-      initialState: Data_Function["const"](initialState),
-      render: render,
-      "eval": $$eval,
-      receiver: Data_Function["const"](Data_Maybe.Nothing.value)
-    });
   };
 };
 
@@ -102397,9 +102427,10 @@ module.exports = {
   SetPassword: SetPassword,
   Submit: Submit,
   PreventDefault: PreventDefault,
+  GoHome: GoHome,
   component: component
 };
-},{"../Affjax/index.js":"output/Affjax/index.js","../Affjax.ResponseFormat/index.js":"output/Affjax.ResponseFormat/index.js","../Control.Applicative/index.js":"output/Control.Applicative/index.js","../Control.Bind/index.js":"output/Control.Bind/index.js","../Control.Monad.Reader/index.js":"output/Control.Monad.Reader/index.js","../Control.Monad.Reader.Class/index.js":"output/Control.Monad.Reader.Class/index.js","../Control.Monad.State.Class/index.js":"output/Control.Monad.State.Class/index.js","../Data.Array/index.js":"output/Data.Array/index.js","../Data.Either/index.js":"output/Data.Either/index.js","../Data.Function/index.js":"output/Data.Function/index.js","../Data.Maybe/index.js":"output/Data.Maybe/index.js","../Data.Semigroup/index.js":"output/Data.Semigroup/index.js","../Data.Show/index.js":"output/Data.Show/index.js","../Effect.Aff.Class/index.js":"output/Effect.Aff.Class/index.js","../Effect.Class/index.js":"output/Effect.Class/index.js","../Effect.Console/index.js":"output/Effect.Console/index.js","../Halogen/index.js":"output/Halogen/index.js","../Halogen.Component/index.js":"output/Halogen.Component/index.js","../Halogen.HTML/index.js":"output/Halogen.HTML/index.js","../Halogen.HTML.Core/index.js":"output/Halogen.HTML.Core/index.js","../Halogen.HTML.Elements/index.js":"output/Halogen.HTML.Elements/index.js","../Halogen.HTML.Events/index.js":"output/Halogen.HTML.Events/index.js","../Halogen.HTML.Properties/index.js":"output/Halogen.HTML.Properties/index.js","../Halogen.Query/index.js":"output/Halogen.Query/index.js","../Halogen.Query.HalogenM/index.js":"output/Halogen.Query.HalogenM/index.js","../Prelude/index.js":"output/Prelude/index.js","../Simple.JSON/index.js":"output/Simple.JSON/index.js","../Web.Event.Event/index.js":"output/Web.Event.Event/index.js","../Web.Event.Internal.Types/index.js":"output/Web.Event.Internal.Types/index.js","../Web.UIEvent.MouseEvent/index.js":"output/Web.UIEvent.MouseEvent/index.js"}],"output/Model.Quote/index.js":[function(require,module,exports) {
+},{"../Affjax/index.js":"output/Affjax/index.js","../Affjax.ResponseFormat/index.js":"output/Affjax.ResponseFormat/index.js","../Capability.Navigate/index.js":"output/Capability.Navigate/index.js","../Control.Applicative/index.js":"output/Control.Applicative/index.js","../Control.Bind/index.js":"output/Control.Bind/index.js","../Control.Monad.Reader/index.js":"output/Control.Monad.Reader/index.js","../Control.Monad.Reader.Class/index.js":"output/Control.Monad.Reader.Class/index.js","../Control.Monad.State.Class/index.js":"output/Control.Monad.State.Class/index.js","../Data.Array/index.js":"output/Data.Array/index.js","../Data.Either/index.js":"output/Data.Either/index.js","../Data.Function/index.js":"output/Data.Function/index.js","../Data.Maybe/index.js":"output/Data.Maybe/index.js","../Data.Semigroup/index.js":"output/Data.Semigroup/index.js","../Data.Show/index.js":"output/Data.Show/index.js","../Effect.Aff.Class/index.js":"output/Effect.Aff.Class/index.js","../Effect.Class/index.js":"output/Effect.Class/index.js","../Effect.Console/index.js":"output/Effect.Console/index.js","../Halogen/index.js":"output/Halogen/index.js","../Halogen.Component/index.js":"output/Halogen.Component/index.js","../Halogen.HTML/index.js":"output/Halogen.HTML/index.js","../Halogen.HTML.Core/index.js":"output/Halogen.HTML.Core/index.js","../Halogen.HTML.Elements/index.js":"output/Halogen.HTML.Elements/index.js","../Halogen.HTML.Events/index.js":"output/Halogen.HTML.Events/index.js","../Halogen.HTML.Properties/index.js":"output/Halogen.HTML.Properties/index.js","../Halogen.Query/index.js":"output/Halogen.Query/index.js","../Halogen.Query.HalogenM/index.js":"output/Halogen.Query.HalogenM/index.js","../Model.Route/index.js":"output/Model.Route/index.js","../Prelude/index.js":"output/Prelude/index.js","../Simple.JSON/index.js":"output/Simple.JSON/index.js","../Web.Event.Event/index.js":"output/Web.Event.Event/index.js","../Web.Event.Internal.Types/index.js":"output/Web.Event.Internal.Types/index.js","../Web.UIEvent.MouseEvent/index.js":"output/Web.UIEvent.MouseEvent/index.js"}],"output/Model.Quote/index.js":[function(require,module,exports) {
 // Generated by purs version 0.12.3
 "use strict";
 
@@ -102413,6 +102444,8 @@ module.exports = {};
 var Affjax = require("../Affjax/index.js");
 
 var Affjax_ResponseFormat = require("../Affjax.ResponseFormat/index.js");
+
+var Capability_Navigate = require("../Capability.Navigate/index.js");
 
 var Control_Applicative = require("../Control.Applicative/index.js");
 
@@ -102465,6 +102498,8 @@ var Halogen_Query = require("../Halogen.Query/index.js");
 var Halogen_Query_HalogenM = require("../Halogen.Query.HalogenM/index.js");
 
 var Model_Quote = require("../Model.Quote/index.js");
+
+var Model_Route = require("../Model.Route/index.js");
 
 var Prelude = require("../Prelude/index.js");
 
@@ -102524,6 +102559,20 @@ var PreventDefault = function () {
   return PreventDefault;
 }();
 
+var GoRegister = function () {
+  function GoRegister(value0) {
+    this.value0 = value0;
+  }
+
+  ;
+
+  GoRegister.create = function (value0) {
+    return new GoRegister(value0);
+  };
+
+  return GoRegister;
+}();
+
 var inputR = function inputR(f) {
   return function (x) {
     return Data_Maybe.Just.create(f(x));
@@ -102531,186 +102580,198 @@ var inputR = function inputR(f) {
 };
 
 var component = function component(dictMonadAff) {
-  return function (dictMonadAsk) {
-    var render = function render(st) {
-      return Halogen_HTML_Elements.form_([Halogen_HTML_Elements.h1_([Halogen_HTML_Core.text("Lookup Stock Quote")]), Halogen_HTML_Elements.label_([Halogen_HTML_Elements.div_([Halogen_HTML_Core.text("Stock Symbol: ")]), Halogen_HTML_Elements.input([Halogen_HTML_Properties.value(st.symbol), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(SetSymbol.create))])]), Halogen_HTML_Elements.button([Halogen_HTML_Properties.disabled(st.loading), Halogen_HTML_Events.onClick(inputR(function (e) {
-        return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(MakeRequest.create));
-      }))])([Halogen_HTML_Core.text("Fetch info")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(function () {
-        if (st.loading) {
-          return "Working...";
-        }
-
-        ;
-        return "";
-      }())]), Halogen_HTML_Elements.div_(Data_Array.concat([function () {
-        if (st.error instanceof Data_Maybe.Nothing) {
-          return [];
-        }
-
-        ;
-
-        if (st.error instanceof Data_Maybe.Just) {
-          return [Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(st.error.value0)])];
-        }
-
-        ;
-        throw new Error("Failed pattern match at Component.SymbolSearch (line 81, column 21 - line 83, column 62): " + [st.error.constructor.name]);
-      }(), function () {
-        if (st.result instanceof Data_Maybe.Nothing) {
-          return [];
-        }
-
-        ;
-
-        if (st.result instanceof Data_Maybe.Just) {
-          return [Halogen_HTML_Elements.h2_([Halogen_HTML_Core.text(st.result.value0.symbol + " Quote:")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("price: " + st.result.value0.price)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("open: " + st.result.value0.open)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("high: " + st.result.value0.high)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("low: " + st.result.value0.low)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("volume: " + st.result.value0.volume)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("latest trading day: " + st.result.value0.latestTradingDay)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("previous close: " + st.result.value0.previousClose)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("change: " + st.result.value0.change)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("change percent: " + st.result.value0.changePercent)])];
-        }
-
-        ;
-        throw new Error("Failed pattern match at Component.SymbolSearch (line 84, column 21 - line 97, column 26): " + [st.result.constructor.name]);
-      }()]))]);
-    };
-
-    var initialState = {
-      loading: false,
-      symbol: "",
-      result: Data_Maybe.Nothing.value,
-      error: Data_Maybe.Nothing.value
-    };
-
-    var $$eval = function $$eval(v) {
-      if (v instanceof SetSymbol) {
-        return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
-          var $19 = {};
-
-          for (var $20 in v1) {
-            if ({}.hasOwnProperty.call(v1, $20)) {
-              $19[$20] = v1[$20];
-            }
-
-            ;
+  return function (dictNavigate) {
+    return function (dictMonadAsk) {
+      var render = function render(st) {
+        return Halogen_HTML_Elements.form_([Halogen_HTML_Elements.a([Halogen_HTML_Events.onClick(inputR(function (e) {
+          return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(GoRegister.create));
+        }))])([Halogen_HTML_Core.text("Register")]), Halogen_HTML_Elements.h1_([Halogen_HTML_Core.text("Lookup Stock Quote")]), Halogen_HTML_Elements.label_([Halogen_HTML_Elements.div_([Halogen_HTML_Core.text("Stock Symbol: ")]), Halogen_HTML_Elements.input([Halogen_HTML_Properties.value(st.symbol), Halogen_HTML_Events.onValueInput(Halogen_HTML_Events.input(SetSymbol.create))])]), Halogen_HTML_Elements.button([Halogen_HTML_Properties.disabled(st.loading), Halogen_HTML_Events.onClick(inputR(function (e) {
+          return PreventDefault.create(Web_UIEvent_MouseEvent.toEvent(e))(Halogen_Query.action(MakeRequest.create));
+        }))])([Halogen_HTML_Core.text("Fetch info")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(function () {
+          if (st.loading) {
+            return "Working...";
           }
 
           ;
-          $19.symbol = v.value0;
-          $19.result = Data_Maybe.Nothing.value;
-          $19.error = Data_Maybe.Nothing.value;
-          return $19;
-        }))(function () {
-          return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
-        });
-      }
+          return "";
+        }())]), Halogen_HTML_Elements.div_(Data_Array.concat([function () {
+          if (st.error instanceof Data_Maybe.Nothing) {
+            return [];
+          }
 
-      ;
+          ;
 
-      if (v instanceof MakeRequest) {
-        return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
-          return v1.symbol;
-        }))(function (v1) {
-          return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_Reader_Class.asks(Halogen_Query_HalogenM.monadAskHalogenM(dictMonadAsk))(function (v2) {
-            return v2.apiUrl;
-          }))(function (v2) {
-            return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log("api url in use: " + v2)))(function () {
-              var reqUrl = v2 + ("/stocks/" + v1);
-              return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
-                var $26 = {};
+          if (st.error instanceof Data_Maybe.Just) {
+            return [Halogen_HTML_Elements.p_([Halogen_HTML_Core.text(st.error.value0)])];
+          }
 
-                for (var $27 in v3) {
-                  if ({}.hasOwnProperty.call(v3, $27)) {
-                    $26[$27] = v3[$27];
+          ;
+          throw new Error("Failed pattern match at Component.SymbolSearch (line 92, column 21 - line 94, column 62): " + [st.error.constructor.name]);
+        }(), function () {
+          if (st.result instanceof Data_Maybe.Nothing) {
+            return [];
+          }
+
+          ;
+
+          if (st.result instanceof Data_Maybe.Just) {
+            return [Halogen_HTML_Elements.h2_([Halogen_HTML_Core.text(st.result.value0.symbol + " Quote:")]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("price: " + st.result.value0.price)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("open: " + st.result.value0.open)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("high: " + st.result.value0.high)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("low: " + st.result.value0.low)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("volume: " + st.result.value0.volume)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("latest trading day: " + st.result.value0.latestTradingDay)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("previous close: " + st.result.value0.previousClose)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("change: " + st.result.value0.change)]), Halogen_HTML_Elements.p_([Halogen_HTML_Core.text("change percent: " + st.result.value0.changePercent)])];
+          }
+
+          ;
+          throw new Error("Failed pattern match at Component.SymbolSearch (line 95, column 21 - line 108, column 26): " + [st.result.constructor.name]);
+        }()]))]);
+      };
+
+      var initialState = {
+        loading: false,
+        symbol: "",
+        result: Data_Maybe.Nothing.value,
+        error: Data_Maybe.Nothing.value
+      };
+
+      var $$eval = function $$eval(v) {
+        if (v instanceof SetSymbol) {
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+            var $20 = {};
+
+            for (var $21 in v1) {
+              if ({}.hasOwnProperty.call(v1, $21)) {
+                $20[$21] = v1[$21];
+              }
+
+              ;
+            }
+
+            ;
+            $20.symbol = v.value0;
+            $20.result = Data_Maybe.Nothing.value;
+            $20.error = Data_Maybe.Nothing.value;
+            return $20;
+          }))(function () {
+            return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value1);
+          });
+        }
+
+        ;
+
+        if (v instanceof MakeRequest) {
+          return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.gets(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+            return v1.symbol;
+          }))(function (v1) {
+            return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_Reader_Class.asks(Halogen_Query_HalogenM.monadAskHalogenM(dictMonadAsk))(function (v2) {
+              return v2.apiUrl;
+            }))(function (v2) {
+              return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log("api url in use: " + v2)))(function () {
+                var reqUrl = v2 + ("/stocks/" + v1);
+                return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
+                  var $27 = {};
+
+                  for (var $28 in v3) {
+                    if ({}.hasOwnProperty.call(v3, $28)) {
+                      $27[$28] = v3[$28];
+                    }
+
+                    ;
                   }
 
                   ;
-                }
+                  $27.loading = true;
+                  return $27;
+                }))(function () {
+                  return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Effect_Aff_Class.liftAff(Halogen_Query_HalogenM.monadAffHalogenM(dictMonadAff))(Affjax.get(Affjax_ResponseFormat.string)(reqUrl)))(function (v3) {
+                    var rb = Data_Either.hush(v3.body);
+                    var v4 = Control_Bind.bindFlipped(Data_Maybe.bindMaybe)(function ($41) {
+                      return Data_Either.hush(Simple_JSON.readJSON(Simple_JSON.readRecord()(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "change";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "changePercent";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "high";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "latestTradingDay";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "low";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "open";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "previousClose";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "price";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "symbol";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
+                        return "volume";
+                      }))(Simple_JSON.readString)(Simple_JSON.readFieldsNil)()())()())()())()())()())()())()())()())()())()()))($41));
+                    })(rb);
 
-                ;
-                $26.loading = true;
-                return $26;
-              }))(function () {
-                return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Effect_Aff_Class.liftAff(Halogen_Query_HalogenM.monadAffHalogenM(dictMonadAff))(Affjax.get(Affjax_ResponseFormat.string)(reqUrl)))(function (v3) {
-                  var rb = Data_Either.hush(v3.body);
-                  var v4 = Control_Bind.bindFlipped(Data_Maybe.bindMaybe)(function ($39) {
-                    return Data_Either.hush(Simple_JSON.readJSON(Simple_JSON.readRecord()(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "change";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "changePercent";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "high";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "latestTradingDay";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "low";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "open";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "previousClose";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "price";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "symbol";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsCons(new Data_Symbol.IsSymbol(function () {
-                      return "volume";
-                    }))(Simple_JSON.readString)(Simple_JSON.readFieldsNil)()())()())()())()())()())()())()())()())()())()()))($39));
-                  })(rb);
+                    var e = function () {
+                      var $32 = Data_Maybe.isNothing(v4);
 
-                  var e = function () {
-                    var $31 = Data_Maybe.isNothing(v4);
-
-                    if ($31) {
-                      return new Data_Maybe.Just("Invalid Symbol");
-                    }
-
-                    ;
-                    return Data_Maybe.Nothing.value;
-                  }();
-
-                  return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v5) {
-                    var $32 = {};
-
-                    for (var $33 in v5) {
-                      if ({}.hasOwnProperty.call(v5, $33)) {
-                        $32[$33] = v5[$33];
+                      if ($32) {
+                        return new Data_Maybe.Just("Invalid Symbol");
                       }
 
                       ;
-                    }
+                      return Data_Maybe.Nothing.value;
+                    }();
 
-                    ;
-                    $32.loading = false;
-                    $32.result = v4;
-                    $32.error = e;
-                    return $32;
-                  }))(function () {
-                    return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+                    return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v5) {
+                      var $33 = {};
+
+                      for (var $34 in v5) {
+                        if ({}.hasOwnProperty.call(v5, $34)) {
+                          $33[$34] = v5[$34];
+                        }
+
+                        ;
+                      }
+
+                      ;
+                      $33.loading = false;
+                      $33.result = v4;
+                      $33.error = e;
+                      return $33;
+                    }))(function () {
+                      return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+                    });
                   });
                 });
               });
             });
           });
-        });
-      }
+        }
 
-      ;
+        ;
 
-      if (v instanceof PreventDefault) {
-        var v1 = Web_Event_Event.type_(v.value0);
-        return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Web_Event_Event.preventDefault(v.value0)))(function () {
-          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log(Data_Show.show(Data_Show.showString)(v1) + " default navigation prevented")))(function () {
-            return $$eval(v.value1);
+        if (v instanceof PreventDefault) {
+          var v1 = Web_Event_Event.type_(v.value0);
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Web_Event_Event.preventDefault(v.value0)))(function () {
+            return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Effect_Class.liftEffect(Halogen_Query_HalogenM.monadEffectHalogenM(dictMonadAff.MonadEffect0()))(Effect_Console.log(Data_Show.show(Data_Show.showString)(v1) + " default navigation prevented")))(function () {
+              return $$eval(v.value1);
+            });
           });
-        });
-      }
+        }
 
-      ;
-      throw new Error("Failed pattern match at Component.SymbolSearch (line 103, column 10 - line 128, column 12): " + [v.constructor.name]);
+        ;
+
+        if (v instanceof GoRegister) {
+          return Control_Bind.discard(Control_Bind.discardUnit)(Halogen_Query_HalogenM.bindHalogenM)(Capability_Navigate.navigate(Capability_Navigate.navigateHalogenM(dictNavigate))(Model_Route.Register.value))(function () {
+            return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(v.value0);
+          });
+        }
+
+        ;
+        throw new Error("Failed pattern match at Component.SymbolSearch (line 114, column 10 - line 142, column 12): " + [v.constructor.name]);
+      };
+
+      return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
+        initialState: Data_Function["const"](initialState),
+        render: render,
+        "eval": $$eval,
+        receiver: Data_Function["const"](Data_Maybe.Nothing.value)
+      });
     };
-
-    return Halogen_Component.component(Halogen_HTML_Core.bifunctorHTML)({
-      initialState: Data_Function["const"](initialState),
-      render: render,
-      "eval": $$eval,
-      receiver: Data_Function["const"](Data_Maybe.Nothing.value)
-    });
   };
 };
 
@@ -102718,9 +102779,10 @@ module.exports = {
   SetSymbol: SetSymbol,
   MakeRequest: MakeRequest,
   PreventDefault: PreventDefault,
+  GoRegister: GoRegister,
   component: component
 };
-},{"../Affjax/index.js":"output/Affjax/index.js","../Affjax.ResponseFormat/index.js":"output/Affjax.ResponseFormat/index.js","../Control.Applicative/index.js":"output/Control.Applicative/index.js","../Control.Bind/index.js":"output/Control.Bind/index.js","../Control.Monad.Reader/index.js":"output/Control.Monad.Reader/index.js","../Control.Monad.Reader.Class/index.js":"output/Control.Monad.Reader.Class/index.js","../Control.Monad.State.Class/index.js":"output/Control.Monad.State.Class/index.js","../Control.Semigroupoid/index.js":"output/Control.Semigroupoid/index.js","../Data.Array/index.js":"output/Data.Array/index.js","../Data.Either/index.js":"output/Data.Either/index.js","../Data.Function/index.js":"output/Data.Function/index.js","../Data.Maybe/index.js":"output/Data.Maybe/index.js","../Data.Semigroup/index.js":"output/Data.Semigroup/index.js","../Data.Show/index.js":"output/Data.Show/index.js","../Data.Symbol/index.js":"output/Data.Symbol/index.js","../Effect.Aff.Class/index.js":"output/Effect.Aff.Class/index.js","../Effect.Class/index.js":"output/Effect.Class/index.js","../Effect.Console/index.js":"output/Effect.Console/index.js","../Halogen/index.js":"output/Halogen/index.js","../Halogen.Component/index.js":"output/Halogen.Component/index.js","../Halogen.HTML/index.js":"output/Halogen.HTML/index.js","../Halogen.HTML.Core/index.js":"output/Halogen.HTML.Core/index.js","../Halogen.HTML.Elements/index.js":"output/Halogen.HTML.Elements/index.js","../Halogen.HTML.Events/index.js":"output/Halogen.HTML.Events/index.js","../Halogen.HTML.Properties/index.js":"output/Halogen.HTML.Properties/index.js","../Halogen.Query/index.js":"output/Halogen.Query/index.js","../Halogen.Query.HalogenM/index.js":"output/Halogen.Query.HalogenM/index.js","../Model.Quote/index.js":"output/Model.Quote/index.js","../Prelude/index.js":"output/Prelude/index.js","../Simple.JSON/index.js":"output/Simple.JSON/index.js","../Web.Event.Event/index.js":"output/Web.Event.Event/index.js","../Web.Event.Internal.Types/index.js":"output/Web.Event.Internal.Types/index.js","../Web.UIEvent.MouseEvent/index.js":"output/Web.UIEvent.MouseEvent/index.js"}],"output/Component.Router/index.js":[function(require,module,exports) {
+},{"../Affjax/index.js":"output/Affjax/index.js","../Affjax.ResponseFormat/index.js":"output/Affjax.ResponseFormat/index.js","../Capability.Navigate/index.js":"output/Capability.Navigate/index.js","../Control.Applicative/index.js":"output/Control.Applicative/index.js","../Control.Bind/index.js":"output/Control.Bind/index.js","../Control.Monad.Reader/index.js":"output/Control.Monad.Reader/index.js","../Control.Monad.Reader.Class/index.js":"output/Control.Monad.Reader.Class/index.js","../Control.Monad.State.Class/index.js":"output/Control.Monad.State.Class/index.js","../Control.Semigroupoid/index.js":"output/Control.Semigroupoid/index.js","../Data.Array/index.js":"output/Data.Array/index.js","../Data.Either/index.js":"output/Data.Either/index.js","../Data.Function/index.js":"output/Data.Function/index.js","../Data.Maybe/index.js":"output/Data.Maybe/index.js","../Data.Semigroup/index.js":"output/Data.Semigroup/index.js","../Data.Show/index.js":"output/Data.Show/index.js","../Data.Symbol/index.js":"output/Data.Symbol/index.js","../Effect.Aff.Class/index.js":"output/Effect.Aff.Class/index.js","../Effect.Class/index.js":"output/Effect.Class/index.js","../Effect.Console/index.js":"output/Effect.Console/index.js","../Halogen/index.js":"output/Halogen/index.js","../Halogen.Component/index.js":"output/Halogen.Component/index.js","../Halogen.HTML/index.js":"output/Halogen.HTML/index.js","../Halogen.HTML.Core/index.js":"output/Halogen.HTML.Core/index.js","../Halogen.HTML.Elements/index.js":"output/Halogen.HTML.Elements/index.js","../Halogen.HTML.Events/index.js":"output/Halogen.HTML.Events/index.js","../Halogen.HTML.Properties/index.js":"output/Halogen.HTML.Properties/index.js","../Halogen.Query/index.js":"output/Halogen.Query/index.js","../Halogen.Query.HalogenM/index.js":"output/Halogen.Query.HalogenM/index.js","../Model.Quote/index.js":"output/Model.Quote/index.js","../Model.Route/index.js":"output/Model.Route/index.js","../Prelude/index.js":"output/Prelude/index.js","../Simple.JSON/index.js":"output/Simple.JSON/index.js","../Web.Event.Event/index.js":"output/Web.Event.Event/index.js","../Web.Event.Internal.Types/index.js":"output/Web.Event.Internal.Types/index.js","../Web.UIEvent.MouseEvent/index.js":"output/Web.UIEvent.MouseEvent/index.js"}],"output/Component.Router/index.js":[function(require,module,exports) {
 // Generated by purs version 0.12.3
 "use strict";
 
@@ -102802,13 +102864,13 @@ var component = function component(dictMonadAff) {
         return function (dictMonadAsk) {
           var render = function render(v) {
             if (v.route instanceof Model_Route.Home) {
-              return Halogen_HTML["slot'"](Halogen_Component_ChildPath.cp1)(Data_Unit.unit)(Component_SymbolSearch.component(dictMonadAff)(dictMonadAsk))(Data_Unit.unit)(Data_Void.absurd);
+              return Halogen_HTML["slot'"](Halogen_Component_ChildPath.cp1)(Data_Unit.unit)(Component_SymbolSearch.component(dictMonadAff)(dictNavigate)(dictMonadAsk))(Data_Unit.unit)(Data_Void.absurd);
             }
 
             ;
 
             if (v.route instanceof Model_Route.Register) {
-              return Halogen_HTML["slot'"](Halogen_Component_ChildPath.cp2)(Data_Unit.unit)(Component_Register.component(dictMonadAff)(dictMonadAsk))(Data_Unit.unit)(Data_Void.absurd);
+              return Halogen_HTML["slot'"](Halogen_Component_ChildPath.cp2)(Data_Unit.unit)(Component_Register.component(dictMonadAff)(dictNavigate)(dictMonadAsk))(Data_Unit.unit)(Data_Void.absurd);
             }
 
             ;
@@ -106657,7 +106719,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "42301" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34893" + '/');
 
   ws.onmessage = function (event) {
     var data = JSON.parse(event.data);

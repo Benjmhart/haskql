@@ -19,6 +19,8 @@ import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
+import Model.Route(Route(..))
+import Capability.Navigate (class Navigate, navigate)
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
 inputR f x = Just $ (f x)
@@ -37,9 +39,11 @@ data Query a
   | SetPassword String a
   | Submit a
   | PreventDefault Event (Query a)
+  | GoHome a
 
 component :: forall m r
     . MonadAff m
+   => Navigate m
    => MonadAsk { apiUrl :: String | r } m
    => H.Component HH.HTML Query Unit Void m
 component =
@@ -58,7 +62,13 @@ component =
   render :: State -> H.ComponentHTML Query
   render st =
     HH.form_ $
-      [ HH.h1_ [ HH.text "Register" ]
+      [ HH.a
+        [ HE.onClick $ inputR \e ->
+                       PreventDefault (toEvent e) $
+                       H.action $ GoHome
+        ]
+        [ HH.text "Home" ]
+      , HH.h1_ [ HH.text "Register" ]
       , HH.label_
           [ HH.div_ [ HH.text "email: " ]
           , HH.input
@@ -66,14 +76,13 @@ component =
               , HE.onValueInput (HE.input SetEmail)
               ]
           ]
-      -- , HH.label_
-      --     [ HH.div_ [ HH.text "password: " ]
-      --     , HH.input
-      --         [ HP.value st.password,
-      --         , HP.type_ HP.InputPassword
-      --         , HE.onValueInput (HE.input SetPassword)
-      --         ]
-      --     ]
+      , HH.label_
+          [ HH.div_ [ HH.text "Password:" ]
+          , HH.input
+              [ HP.value st.password
+              , HE.onValueInput (HE.input SetPassword)
+              ]
+          ]
       , HH.button
           [ HP.disabled st.loading
           , HE.onClick $ inputR \e ->
@@ -118,3 +127,6 @@ component =
       H.liftEffect $ preventDefault e
       H.liftEffect $ log $ show t <> " default navigation prevented"
       eval q
+    GoHome next -> do
+      navigate Home
+      pure next
