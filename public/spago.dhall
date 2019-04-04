@@ -11,12 +11,16 @@ You can edit this file as you like.
     , "debug"
     , "effect"
     , "foreign"
+    , "formatters"
     , "halogen"
     , "lists"
     , "node-process"
+    , "now"
     , "psci-support"
     , "routing"
+    , "routing-duplex"
     , "simple-json"
+    , "slug"
     ]
 , packages =
     ./packages.dhall

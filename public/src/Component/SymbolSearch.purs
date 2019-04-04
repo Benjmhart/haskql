@@ -2,6 +2,7 @@ module Component.SymbolSearch (State, Query(..), component) where
 
 import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<))
 
+import Capability.Navigate (class Navigate, navigate)
 import Data.Array (concat)
 import Data.Maybe (Maybe(..), isNothing )
 import Data.Either (hush)
@@ -20,6 +21,7 @@ import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
 import Model.Quote (Quote)
+import Model.Route(Route(..))
 
 -- TODO - move this to some kind of supplemental library
 inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
@@ -38,9 +40,11 @@ data Query a
   = SetSymbol String a
   | MakeRequest a
   | PreventDefault Event (Query a)
+  | GoRegister a
 
 component :: forall m r
     . MonadAff m
+   => Navigate m
    => MonadAsk { apiUrl :: String | r } m
    => H.Component HH.HTML Query Unit Void m
 component =
@@ -59,7 +63,14 @@ component =
   render :: State -> H.ComponentHTML Query
   render st =
     HH.form_ $
-      [ HH.h1_ [ HH.text "Lookup Stock Quote" ]
+      -- the default styling on this A tag sucks
+      [ HH.a
+        [ HE.onClick $ inputR \e ->
+                       PreventDefault (toEvent e) $
+                       H.action $ GoRegister
+        ]
+        [ HH.text "Register" ]
+      , HH.h1_ [ HH.text "Lookup Stock Quote" ]
       , HH.label_
           [ HH.div_ [ HH.text "Stock Symbol: " ]
           , HH.input
@@ -112,7 +123,7 @@ component =
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
       H.liftEffect $ log $ "api url in use: " <> apiUrl
-      let reqUrl = apiUrl <> "/api/v1/stocks/" <> symbol
+      let reqUrl = apiUrl <> "/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string (reqUrl)
       let rb = hush response.body
@@ -126,3 +137,6 @@ component =
       H.liftEffect $ preventDefault e
       H.liftEffect $ log $ show t <> " default navigation prevented"
       eval q
+    GoRegister next -> do
+      navigate Register
+      pure next
