@@ -7,7 +7,7 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
-import Component as UI 
+import Component.SymbolSearch as SS 
 import Routing.Hash (getHash)
 
 import Model.AppEnv (AppEnv, runAppM)
@@ -30,8 +30,8 @@ main env apiUrl = HA.runHalogenAff do
       , apiUrl:      apiUrl
       -- , user:        currentUser
       }
-    rootComponent :: H.Component HH.HTML UI.Query Unit Void Aff
-    rootComponent = H.hoist (runAppM appEnv) UI.ui
+    rootComponent :: H.Component HH.HTML SS.Query Unit Void Aff
+    rootComponent = H.hoist (runAppM appEnv) SS.component
   --
   -- run ReaderT..build 
   halogenIO <- runUI rootComponent unit body

@@ -18,7 +18,7 @@
       }
     },
     "build:prod": {
-      "command": "spago build &&  rm -rf  ../hastock/static/* && parcel build index.html --no-source-maps --public-url ./ --out-dir ../hastock/static",
+      "command": "spago build &&  rm -rf  ../hastock/static/* && parcel build index.js --no-source-maps --public-url ./ --out-dir ../hastock/static --out-file index.js && cp ./index.html ../hastock/static/index.html",
       "env": {
         "NODE_ENV": "production"
       }

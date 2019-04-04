@@ -14,6 +14,7 @@ You can edit this file as you like.
     , "halogen"
     , "lists"
     , "node-process"
+    , "psci-support"
     , "routing"
     , "simple-json"
     ]
