@@ -23,7 +23,7 @@ import Control.Monad.Logger                 (liftLoc)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.HTTP.Client.TLS              (getGlobalManager)
-import Network.Wai (Middleware)
+import Network.Wai                          (Middleware)
 import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
@@ -32,7 +32,11 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
                                              mkRequestLogger, outputFormat)
+import Network.Wai.Middleware.Rewrite       (rewritePureWithQueries, 
+                                             PathsAndQueries)
+import Network.Wai.Middleware.Routed        (routedMiddleware)
 import Network.Wai.Middleware.Cors          (simpleCors)
+import Network.HTTP.Types.Header            (RequestHeaders)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
@@ -70,7 +74,21 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ simpleCors . logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ makeSpaRoutes . simpleCors . logWare $ defaultMiddlewaresNoLogging appPlain
+
+-- TODO: possibly publish this as a helper middleware
+makeSpaRoutes :: Middleware
+makeSpaRoutes = 
+  routedMiddleware ( not . ("api" `elem`) ) $ rewritePureWithQueries rw
+    where 
+      rw :: PathsAndQueries -> RequestHeaders -> PathsAndQueries
+      rw (["favicon.ico"], queries) _ = (["favicon.ico"], queries)
+      rw (["robots.txt"], queries) _  = (["robots.txt"], queries)
+      rw (["index.js"], queries) _    = (["index.js"], queries)
+      rw (paths , queries) _ 
+        | "index.js" `elem` paths       = (["index.js"], queries)
+        | otherwise                     = ([], queries)
+
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
