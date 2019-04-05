@@ -10,5 +10,5 @@ result*
 /.spago
 /output
 /public/.cache
-./hastock/.stack-work/
-./public/dist
+hastock/.stack-work/
+public/dist
