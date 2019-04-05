@@ -27,7 +27,7 @@ import CSS.Color as COLOR
 import Halogen.HTML.CSS as HCSS
 import CSS (Rendered, Path(..), Predicate(..), Refinement(..), Selector(..), FontFaceSrc(..), FontFaceFormat(..), renderedSheet, renderedInline, fromString, selector, block, display, render, borderBox, boxSizing, contentBox, blue, backgroundColor, body,(?))
 
-styleComponent :: forall m. H.Component HH.HTML (Const Void) Unit Void m
+styleComponent :: CSS -> forall m. H.Component HH.HTML (Const Void) Unit Void m
 styleComponent =
   H.component
     { initialState: const unit

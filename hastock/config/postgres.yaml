@@ -1,0 +1,5 @@
+psql template1
+CREATE USER hastock WITH PASSWORD '12345678';
+CREATE DATABASE hastock;
+GRANT ALL PRIVILEGES ON DATABASE hastock TO hastock;
+\q
