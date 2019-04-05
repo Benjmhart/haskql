@@ -16,8 +16,27 @@ import Data.Either (hush)
 import Data.Maybe (Maybe(..))
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
-
+import Data.Foldable (traverse_)
+import Data.Const (Const)
+import Data.Newtype (unwrap)
+import Web.DOM.ParentNode (QuerySelector(..))
 import Model.AppEnv (AppEnv, runAppM, LogLevel, ApiUrl, BaseUrl)
+import CSS as CSS
+import CSS.Stylesheet (CSS, Rule(..), runS)
+import CSS.Color as COLOR
+import Halogen.HTML.CSS as HCSS
+import CSS (Rendered, Path(..), Predicate(..), Refinement(..), Selector(..), FontFaceSrc(..), FontFaceFormat(..), renderedSheet, renderedInline, fromString, selector, block, display, render, borderBox, boxSizing, contentBox, blue, backgroundColor, body,(?))
+
+styleComponent :: forall m. H.Component HH.HTML (Const Void) Unit Void m
+styleComponent =
+  H.component
+    { initialState: const unit
+    , render: const $ HCSS.stylesheet $ do
+                                          body ? do
+                                            backgroundColor blue
+    , eval: absurd <<< unwrap
+    , receiver: const Nothing
+    }
 
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
@@ -43,7 +62,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --
   -- run ReaderT..build 
     initialRoute = hush $ parse routeCodec initialHash
-
+  halogenStyle <- traverse_ (runUI styleComponent unit) =<< HA.selectElement (QuerySelector "head")
   halogenIO <- runUI rootComponent initialRoute body
   
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
