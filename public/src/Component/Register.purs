@@ -63,7 +63,8 @@ component =
   render st =
     HH.form_ $
       [ HH.a
-        [ HE.onClick $ inputR \e ->
+        [ HP.href "#"
+        , HE.onClick $ inputR \e ->
                        PreventDefault (toEvent e) $
                        H.action $ GoHome
         ]

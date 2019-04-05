@@ -65,7 +65,8 @@ component =
     HH.form_ $
       -- the default styling on this A tag sucks
       [ HH.a
-        [ HE.onClick $ inputR \e ->
+        [ HP.href "#"
+        , HE.onClick $ inputR \e ->
                        PreventDefault (toEvent e) $
                        H.action $ GoRegister
         ]

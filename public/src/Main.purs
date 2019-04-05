@@ -38,6 +38,11 @@ styleComponent =
     , receiver: const Nothing
     }
 
+
+style = HCSS.stylesheet $ do
+                            body ? do
+                              backgroundColor blue
+
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
 main logLevel apiUrl baseUrl = HA.runHalogenAff do
@@ -62,7 +67,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --
   -- run ReaderT..build 
     initialRoute = hush $ parse routeCodec initialHash
-  halogenStyle <- traverse_ (runUI styleComponent unit) =<< HA.selectElement (QuerySelector "head")
+  -- halogenStyle <- traverse_ (runUI styleComponent unit) =<< HA.selectElement (QuerySelector "head")
   halogenIO <- runUI rootComponent initialRoute body
   
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
