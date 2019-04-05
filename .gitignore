@@ -11,3 +11,4 @@ result*
 /output
 /public/.cache
 ./hastock/.stack-work/
+./public/dist
