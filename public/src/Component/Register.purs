@@ -11,19 +11,16 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.HelperLib as HL
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Simple.JSON as JSON
-import Web.Event.Event (type_, EventType(..), preventDefault)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
 import Model.Route(Route(..))
 import Capability.Navigate (class Navigate, navigate)
--- TODO - move this to some kind of supplemental library
-inputR :: forall f a. (a -> f Unit) -> a -> Maybe (f Unit)
-inputR f x = Just $ (f x)
 
 
 -- TODO - result and error should just be captured as one Either value
@@ -64,7 +61,7 @@ component =
     HH.form_ $
       [ HH.a
         [ HP.href "#"
-        , HE.onClick $ inputR \e ->
+        , HE.onClick $ HL.inputR \e ->
                        PreventDefault (toEvent e) $
                        H.action $ GoHome
         ]
@@ -86,7 +83,7 @@ component =
           ]
       , HH.button
           [ HP.disabled st.loading
-          , HE.onClick $ inputR \e ->
+          , HE.onClick $ HL.inputR \e ->
                           PreventDefault (toEvent e) $
                           H.action $ Submit
           ]
@@ -124,9 +121,7 @@ component =
       pure next
       -- TODO Move this out to a helper lib
     PreventDefault e q -> do
-      let (EventType t) = type_ e
-      H.liftEffect $ preventDefault e
-      H.liftEffect $ log $ show t <> " default navigation prevented"
+      H.liftEffect $ HL.preventDefault e
       eval q
     GoHome next -> do
       navigate Home

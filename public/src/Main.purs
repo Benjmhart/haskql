@@ -6,42 +6,42 @@ import Effect.Aff (Aff, launchAff_)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
+import Halogen.HTML.CSS as HCSS
 import Halogen.VDom.Driver (runUI)
 import Component.Router as Router
 import Routing.Hash (getHash, matchesWith)
 import Routing.Duplex (parse)
-import Halogen (liftAff, liftEffect)
-import Model.Route (Route, routeCodec)
+import Halogen (liftEffect)
+
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
-import Effect.Ref (Ref)
+-- import Effect.Ref (Ref) // 
 import Effect.Ref as Ref
-import Data.Foldable (traverse_)
+import Data.Foldable (traverse_) -- used to mount style
 import Data.Const (Const)
 import Data.Newtype (unwrap)
-import Web.DOM.ParentNode (QuerySelector(..))
-import Model.AppEnv (AppEnv, runAppM, LogLevel, ApiUrl, BaseUrl)
+import Web.DOM.ParentNode (QuerySelector(..)) -- for style to get the head element
+
+import Model.Route (routeCodec)
+import Model.AppEnv (AppEnv, runAppM)
 import CSS as CSS
-import CSS.Stylesheet (CSS, Rule(..), runS)
-import CSS.Color as COLOR
-import Halogen.HTML.CSS as HCSS
-import CSS (Rendered, Path(..), Predicate(..), Refinement(..), Selector(..), FontFaceSrc(..), FontFaceFormat(..), renderedSheet, renderedInline, fromString, selector, block, display, render, borderBox, boxSizing, contentBox, blue, backgroundColor, body,(?))
+import CSS.Stylesheet (CSS)
+-- import CSS.Color as COLOR
+import CSS ((?))
 
 styleComponent :: CSS -> forall m. H.Component HH.HTML (Const Void) Unit Void m
-styleComponent =
+styleComponent css =
   H.component
     { initialState: const unit
-    , render: const $ HCSS.stylesheet $ do
-                                          body ? do
-                                            backgroundColor blue
+    , render: const $ HCSS.stylesheet $ css
     , eval: absurd <<< unwrap
     , receiver: const Nothing
     }
 
-
-style = HCSS.stylesheet $ do
-                            body ? do
-                              backgroundColor blue
+style:: CSS
+style = do
+          CSS.body ? do
+            CSS.backgroundColor CSS.blue
 
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
@@ -67,7 +67,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --
   -- run ReaderT..build 
     initialRoute = hush $ parse routeCodec initialHash
-  -- halogenStyle <- traverse_ (runUI styleComponent unit) =<< HA.selectElement (QuerySelector "head")
+  halogenStyle <- traverse_ (runUI (styleComponent style) unit) =<< HA.selectElement (QuerySelector "head")
   halogenIO <- runUI rootComponent initialRoute body
   
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
