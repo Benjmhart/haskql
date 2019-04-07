@@ -28,20 +28,9 @@ import CSS as CSS
 import CSS.Stylesheet (CSS)
 -- import CSS.Color as COLOR
 import CSS ((?))
+import Halogen.Theme (theme)
+import Component.Style (mountStyles)
 
-styleComponent :: CSS -> forall m. H.Component HH.HTML (Const Void) Unit Void m
-styleComponent css =
-  H.component
-    { initialState: const unit
-    , render: const $ HCSS.stylesheet $ css
-    , eval: absurd <<< unwrap
-    , receiver: const Nothing
-    }
-
-style:: CSS
-style = do
-          CSS.body ? do
-            CSS.backgroundColor CSS.blue
 
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
@@ -67,7 +56,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --
   -- run ReaderT..build 
     initialRoute = hush $ parse routeCodec initialHash
-  halogenStyle <- traverse_ (runUI (styleComponent style) unit) =<< HA.selectElement (QuerySelector "head")
+  halogenStyle <- mountStyles theme
   halogenIO <- runUI rootComponent initialRoute body
   
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
