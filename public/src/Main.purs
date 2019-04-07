@@ -6,7 +6,6 @@ import Effect.Aff (Aff, launchAff_)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.CSS as HCSS
 import Halogen.VDom.Driver (runUI)
 import Component.Router as Router
 import Routing.Hash (getHash, matchesWith)
@@ -17,17 +16,9 @@ import Data.Either (hush)
 import Data.Maybe (Maybe(..))
 -- import Effect.Ref (Ref) // 
 import Effect.Ref as Ref
-import Data.Foldable (traverse_) -- used to mount style
-import Data.Const (Const)
-import Data.Newtype (unwrap)
-import Web.DOM.ParentNode (QuerySelector(..)) -- for style to get the head element
 
 import Model.Route (routeCodec)
 import Model.AppEnv (AppEnv, runAppM)
-import CSS as CSS
-import CSS.Stylesheet (CSS)
--- import CSS.Color as COLOR
-import CSS ((?))
 import Halogen.Theme (theme)
 import Component.Style (mountStyles)
 
