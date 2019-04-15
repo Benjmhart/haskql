@@ -32,8 +32,8 @@ library
       Settings.StaticFiles
   other-modules:
       Paths_hastock
-      Model.Secrets
       Model.Quote
+      Model.User
       Handler.Quote.GetQuote
   hs-source-dirs:
       src
@@ -59,6 +59,10 @@ library
     , http-conduit >=2.3 && <2.4
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , resource-pool
     , safe
     , shakespeare >=2.0 && <2.1
     , template-haskell
@@ -113,6 +117,7 @@ executable hastock
     , http-conduit >=2.3 && <2.4
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
+    , persistent
     , safe
     , shakespeare >=2.0 && <2.1
     , template-haskell

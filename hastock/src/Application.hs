@@ -1,6 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -19,7 +25,8 @@ module Application
     , handler
     ) where
 
-import Control.Monad.Logger                 (liftLoc)
+
+import Control.Monad.Logger                 (liftLoc, runLoggingT)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.HTTP.Client.TLS              (getGlobalManager)
@@ -39,11 +46,13 @@ import Network.Wai.Middleware.Cors          (simpleCors)
 import Network.HTTP.Types.Header            (RequestHeaders)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
-
+import Database.Persist.Postgresql
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Common
 import Handler.Home
+import Database.Persist.Postgresql (ConnectionString)
+import Model.User
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -54,6 +63,12 @@ mkYesodDispatch "App" resourcesApp
 -- performs initialization and returns a foundation datatype value. This is also
 -- the place to put your migrate statements to have automatic database
 -- migrations handled by Yesod.
+makeDBConnectionString :: 
+  ByteString -> ByteString -> ByteString -> ByteString -> ByteString -> ConnectionString
+makeDBConnectionString dbHost dbPort dbUser dbName dbPw =
+  "host=" <> dbHost <> " port=" <> dbPort <>" user=" <> dbUser <> " dbname=" <> dbName <> " password=" <> dbPw
+
+
 makeFoundation :: AppSettings -> IO App
 makeFoundation appSettings = do
     -- Some basic initializations: HTTP connection manager, logger, and static
@@ -64,6 +79,23 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
 
+    -- set up persistent
+    let 
+      mkFoundation appConnPool = App {..}
+      dbHost = databaseHost appSettings
+      dbPort = databasePort appSettings
+      dbUser = databaseUser appSettings
+      dbName = databaseName appSettings
+      dbPw   = databasePw   appSettings
+      dbConnString :: ConnectionString
+      dbConnString   = makeDBConnectionString dbHost dbPort dbUser dbName dbPw
+      tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
+      logFunc        = messageLoggerSource tempFoundation appLogger
+    -- make our connection pool
+    appConnPool <- flip runLoggingT logFunc $ 
+                        createPostgresqlPool dbConnString 10
+    -- run any migrations
+    runLoggingT (runSqlPool (runMigration migrateAll) appConnPool) logFunc
     -- Return the foundation
     return App {..}
 

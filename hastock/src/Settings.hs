@@ -55,6 +55,12 @@ data AppSettings = AppSettings
     -- ^ Copyright text to appear in the footer of the page
     , appAnalytics              :: Maybe Text
     -- ^ Google Analytics code
+    , alphaVantageApiKey        :: Text
+    , databaseHost              :: ByteString
+    , databasePort              :: ByteString
+    , databaseUser              :: ByteString
+    , databaseName              :: ByteString
+    , databasePw                :: ByteString
     }
 
 instance FromJSON AppSettings where
@@ -81,6 +87,12 @@ instance FromJSON AppSettings where
 
         appCopyright              <- o .: "copyright"
         appAnalytics              <- o .:? "analytics"
+        alphaVantageApiKey        <- o .: "alphaVantageApiKey"
+        databaseHost              <-  fromString <$> o .: "dbHost"
+        databasePort              <-  (fromString . show :: Int -> ByteString) <$> o .: "dbPort"
+        databaseUser              <-  fromString <$> o .: "dbUser"
+        databaseName              <-  fromString <$> o .: "dbName"
+        databasePw                <-  fromString <$> o .: "dbPassword"
 
         return AppSettings {..}
 

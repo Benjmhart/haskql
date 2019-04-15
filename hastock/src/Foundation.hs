@@ -17,6 +17,7 @@ import Yesod.Default.Util          (addStaticContentExternal)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import Database.Persist.Sql (ConnectionPool, runSqlPool)
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -25,6 +26,7 @@ import qualified Data.Text.Encoding as TE
 data App = App
     { appSettings    :: AppSettings
     , appStatic      :: Static -- ^ Settings for static file serving.
+    , appConnPool    :: ConnectionPool
     , appHttpManager :: Manager
     , appLogger      :: Logger
     }
@@ -176,6 +178,14 @@ instance YesodBreadcrumbs App where
         -> Handler (Text, Maybe (Route App))
     breadcrumb HomeR = return ("Home", Nothing)
     breadcrumb  _ = return ("home", Nothing)
+
+instance YesodPersist App where
+  type YesodPersistBackend App = SqlBackend
+  runDB action = do
+      master <- getYesod
+      runSqlPool action $ appConnPool master
+instance YesodPersistRunner App where
+  getDBRunner = defaultGetDBRunner appConnPool
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
