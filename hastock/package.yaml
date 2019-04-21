@@ -1,5 +1,5 @@
 name: hastock
-version: "0.0.0"
+version: '0.0.0'
 
 dependencies:
   # Due to a bug in GHC 8.0.1, we block its usage
@@ -73,6 +73,7 @@ executables:
     dependencies:
       - hastock
       - wai-cors
+      - persistent
       - graphql-api
     when:
       - condition: flag(library-only)

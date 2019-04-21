@@ -10,14 +10,18 @@ import Halogen.VDom.Driver (runUI)
 import Component.Router as Router
 import Routing.Hash (getHash, matchesWith)
 import Routing.Duplex (parse)
-import Halogen (liftAff, liftEffect)
-import Model.Route (Route, routeCodec)
+import Halogen (liftEffect)
+
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
-import Effect.Ref (Ref)
+-- import Effect.Ref (Ref) // 
 import Effect.Ref as Ref
 
-import Model.AppEnv (AppEnv, runAppM, LogLevel, ApiUrl, BaseUrl)
+import Model.Route (routeCodec)
+import Model.AppEnv (AppEnv, runAppM)
+import Halogen.Theme (theme)
+import Component.Style (mountStyles)
+
 
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
@@ -43,7 +47,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --
   -- run ReaderT..build 
     initialRoute = hush $ parse routeCodec initialHash
-
+  halogenStyle <- mountStyles theme
   halogenIO <- runUI rootComponent initialRoute body
   
   void $ liftEffect $ matchesWith (parse routeCodec) \old new ->

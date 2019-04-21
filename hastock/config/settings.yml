@@ -8,7 +8,13 @@ ip-from-header: '_env:YESOD_IP_FROM_HEADER:false'
 # Default behavior: determine the application root from the request headers.
 # Uncomment to set an explicit approot
 approot: '_env:APPROOT:http://localhost:3000'
+alphaVantageApiKey: '_env:APIKEY:jibberish!'
 
+dbName: '_env:PGDATABASE:hastock'
+dbHost: '_env:PGHOST:localhost'
+dbPort: '_env:PGPORT:5432'
+dbUser: '_env:PGUSER:hastock'
+dbPassword: '_env:PGPASS:password'
 # By default, `yesod devel` runs in development, and built executables use
 # production settings (see below). To override this, use the following:
 #
