@@ -97,7 +97,8 @@ makeFoundation appSettings = do
     -- run any migrations
     runLoggingT (runSqlPool (runMigration migrateAll) appConnPool) logFunc
     -- Return the foundation
-    return App {..}
+    return $ mkFoundation appConnPool
+
 
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
