@@ -33,7 +33,7 @@ import Halogen.HTML as HH
 import Halogen.HelperLib as HL
 -- import Halogen.HTML.Properties as HP
 import CSS (CSS, height, width, display, padding, margin)
-import CSS.Size (pct, nil, rem, px, vh)
+import CSS.Size (pct, rem, px, vh)
 import CSS.Display(flex)
 import CSS.Flexbox(justifyContent, spaceAround)
 import CSS.Box (boxShadow)
