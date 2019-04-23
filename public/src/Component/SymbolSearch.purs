@@ -1,13 +1,15 @@
-module Component.SymbolSearch (State, Query(..), component) where
+module Component.SymbolSearch (styles, State, Query(..), component) where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<))
+import Prelude (type (~>), map, Unit, Void, bind, const, discard, pure, ($), (<<<), (<>), (=<<))
 
-import Capability.Navigate (class Navigate, navigate)
-import Data.Array (concat)
-import Data.Maybe (Maybe(..), isNothing )
-import Data.Either (hush)
+import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+import Data.Bifunctor(lmap)
+import Foreign(ForeignError, renderForeignError)
+import Data.List.NonEmpty (NonEmptyList, singleton)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
+import Options.Applicative.Internal.Utils
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -20,28 +22,57 @@ import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Model.Quote (Quote)
-import Model.Route(Route(..))
+import CSS (CSS) -- , height, width)
+-- import CSS.Size (pct)
+import Component.StockResult as Result
 
+-- TODO move this to a helper library for Affjax stuff
+transformError :: AXRF.ResponseFormatError -> NonEmptyList ForeignError
+transformError (AXRF.ResponseFormatError e _) = singleton e
 
+-- classNames
+ss                  :: String
+ss                  = "symbol-search"
+ssHeader            :: String
+ssHeader            = "symbol-search__header"
+ssForm              :: String
+ssForm              = "symbol-search__form"
+ssSymbolField       :: String
+ssSymbolField       = "symbol-search__form__symbol-field"
+ssSymbolFieldLabel  :: String
+ssSymbolFieldLabel  = "symbol-search__form__symbol-field__label"
+ssSymbolFieldInput  :: String
+ssSymbolFieldInput  = "symbol-search__form__symbol-field__input"
+ssFetchButton       :: String
+ssFetchButton       = "symbol-search__form__submit-button"
+ssResults           :: String
+ssResults           = "symbol-search__Results"
+ssWorking           :: String
+ssWorking           = "symbol-search__Working"
+ssError             :: String
+ssError             = "symbol-search__Error"
 
+styles :: Array CSS
+styles = 
+  [
+
+  ]
 
 -- TODO - result and error should just be captured as one Either value
 type State =
   { loading :: Boolean
   , symbol :: String
-  , result :: Maybe Quote
-  , error :: Maybe String
+  , result :: Either String (Maybe Quote)
   }
 
 data Query a
   = SetSymbol String a
   | MakeRequest a
   | PreventDefault Event (Query a)
-  | GoRegister a
+
 
 component :: forall m r
     . MonadAff m
-   => Navigate m
    => MonadAsk { apiUrl :: String | r } m
    => H.Component HH.HTML Query Unit Void m
 component =
@@ -54,85 +85,66 @@ component =
   where
 
   initialState :: State
-  initialState = { loading: false, symbol: "", result: Nothing, error: Nothing}
+  initialState = { loading: false, symbol: "", result: Right Nothing}
 
   -- TODO - break this up into smaller components
   render :: State -> H.ComponentHTML Query
   render st =
-    HH.form_ $
-      -- the default styling on this A tag sucks
-      [ HH.a
-        [ HP.href "#"
-        , HE.onClick $ HL.inputR \e ->
-                       PreventDefault (toEvent e) $
-                       H.action $ GoRegister
-        ]
-        [ HH.text "Register" ]
-      , HH.h1_ [ HH.text "Lookup Stock Quote" ]
-      , HH.label_
-          [ HH.div_ [ HH.text "Stock Symbol: " ]
-          , HH.input
-              [ HP.value st.symbol
-              , HE.onValueInput (HE.input SetSymbol)
+    HH.div [ HL.class_ ss ]
+      [ HH.h1 
+        [ HL.class_ ssHeader ] 
+        [ HH.text "Lookup Stock Quote" ]
+      , HH.form 
+          [ HL.class_ ssForm ] 
+          [ HH.label
+              [ HL.class_ ssSymbolField]
+              [ HH.div
+                [ HL.class_ ssSymbolFieldLabel ]
+                [ HH.text "Stock Symbol: " ]
+              , HH.input
+                  [ HL.class_ ssSymbolFieldInput
+                  , HP.value st.symbol
+                  , HE.onValueInput (HE.input SetSymbol)
+                  ]
               ]
+          , HH.button
+              [ HL.class_ ssFetchButton
+              , HP.disabled st.loading
+              , HE.onClick $ HL.inputR \e ->
+                              PreventDefault (toEvent e) $
+                              H.action $ MakeRequest
+              ]
+              [ HH.text "Fetch info" ]
           ]
-      , HH.button
-          [ HP.disabled st.loading
-          , HE.onClick $ HL.inputR \e ->
-                          PreventDefault (toEvent e) $
-                          H.action $ MakeRequest
-          ]
-          [ HH.text "Fetch info" ]
-      , HH.p_
+      , HH.p
+          [ HL.class_ ssWorking ]
           [ HH.text (if st.loading then "Working..." else "") ]
-      , HH.div_ $
-          concat [
-                    case st.error of
-                      Nothing -> []
-                      Just err -> [ HH.p_ [ HH.text (err) ] ]
-                 ,  case st.result of
-                      Nothing -> []
-                      Just (q) ->
-                        [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]
-                        , HH.p_  [ HH.text $ "price: " <> q.price ]
-                        , HH.p_  [ HH.text $ "open: " <> q.open ]
-                        , HH.p_  [ HH.text $ "high: " <> q.high ]
-                        , HH.p_  [ HH.text $ "low: " <> q.low ]
-                        , HH.p_  [ HH.text $ "volume: " <> q.volume ]
-                        , HH.p_  [ HH.text $ "latest trading day: " <> q.latestTradingDay ]
-                        , HH.p_  [ HH.text $ "previous close: " <> q.previousClose ]
-                        , HH.p_  [ HH.text $ "change: " <> q.change ]
-                        , HH.p_  [ HH.text $ "change percent: " <> q.changePercent ]
-                        ]
-                 ]
+      , Result.component st.result
       ]
+
 
   --  TODO: pull out pure parts into their own functions
   eval :: Query ~> H.ComponentDSL State Query Void m
   eval = case _ of
     SetSymbol symbol next -> do
       H.modify_ (_ { symbol = symbol
-                   , result = Nothing :: Maybe Quote
-                   , error = Nothing :: Maybe String 
+                   , result = Right Nothing
                    })
       pure next
     MakeRequest next -> do
-    --TODO - move  the API call here + parsing to a service file
+    --TODO - move  the API call here + parsing to a monad capability file
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
       H.liftEffect $ log $ "api url in use: " <> apiUrl
       let reqUrl = apiUrl <> "/stocks/" <> symbol
       H.modify_ (_ { loading = true })
       response <- H.liftAff $ AX.get AXRF.string (reqUrl)
-      let rb = hush response.body
-      let (q :: Maybe Quote) = hush <<< JSON.readJSON =<< rb
-      let e = if isNothing q then Just "Invalid Symbol" else Nothing
-      H.modify_ (_ { loading = false, result = q, error = e })
+      let rb = lmap transformError $ response.body
+      let result = lmap (unLines <<< (map renderForeignError) ) $ (JSON.readJSON =<< rb)
+      H.modify_ (_ { loading = false, result = result })
       pure next
       -- TODO Move this out to a helper lib
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
       eval q
-    GoRegister next -> do
-      navigate Register
-      pure next
+

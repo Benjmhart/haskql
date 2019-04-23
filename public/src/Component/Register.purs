@@ -1,20 +1,20 @@
 module Component.Register (State, Query(..), component) where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, show, ($), (<<<), (<>), (=<<))
+import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($))
 
-import Data.Array (concat)
-import Data.Maybe (Maybe(..), isNothing )
-import Data.Either (hush)
+-- import Data.Array (concat)
+import Data.Maybe (Maybe(..) )
+-- import Data.Either (hush)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Console (log)
+-- import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.HelperLib as HL
-import Affjax as AX
-import Affjax.ResponseFormat as AXRF
-import Simple.JSON as JSON
+-- import Affjax as AX
+-- import Affjax.ResponseFormat as AXRF
+-- import Simple.JSON as JSON
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
@@ -36,7 +36,6 @@ data Query a
   | SetPassword String a
   | Submit a
   | PreventDefault Event (Query a)
-  | GoHome a
 
 component :: forall m r
     . MonadAff m
@@ -59,14 +58,7 @@ component =
   render :: State -> H.ComponentHTML Query
   render st =
     HH.form_ $
-      [ HH.a
-        [ HP.href "#"
-        , HE.onClick $ HL.inputR \e ->
-                       PreventDefault (toEvent e) $
-                       H.action $ GoHome
-        ]
-        [ HH.text "Home" ]
-      , HH.h1_ [ HH.text "Register" ]
+      [ HH.h1_ [ HH.text "Register" ]
       , HH.label_
           [ HH.div_ [ HH.text "email: " ]
           , HH.input
@@ -123,6 +115,3 @@ component =
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
       eval q
-    GoHome next -> do
-      navigate Home
-      pure next

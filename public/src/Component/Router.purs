@@ -1,4 +1,4 @@
-module Component.Router where
+module Component.Router (Input, State, Query(..), component, styles) where
 
 import Prelude
 
@@ -14,6 +14,7 @@ import Model.Route (Route(..))
 -- import Conduit.Page.Editor as Editor
 import Component.SymbolSearch as Home
 import Component.Register as Register
+import Component.Header as Header
 -- import Conduit.Page.Login as Login
 -- import Conduit.Page.Profile (Tab(..))
 -- import Conduit.Page.Profile as Profile
@@ -21,14 +22,49 @@ import Component.Register as Register
 -- import Conduit.Page.Settings as Settings
 -- import Conduit.Page.ViewArticle as ViewArticle
 import Control.Monad.Reader (class MonadAsk)
-import Data.Either.Nested (Either2)
-import Data.Functor.Coproduct.Nested (Coproduct2)
+import Data.Either.Nested (Either3)
+import Data.Functor.Coproduct.Nested (Coproduct3)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Ref (Ref)
+-- import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
+import Halogen.HelperLib as HL
+-- import Halogen.HTML.Properties as HP
+import CSS (CSS, height, width, display, padding, margin)
+import CSS.Size (pct, nil, rem, px, vh)
+import CSS.Display(flex)
+import CSS.Flexbox(justifyContent, spaceAround)
+import CSS.Box (boxShadow)
+import CSS.Color(hsla)
+import CSS.Border (border, solid)
+
+-- class names
+coreLayout :: String
+coreLayout = "core-layout"
+
+bodyContent :: String
+bodyContent = "body-content"
+
+styles :: Array CSS
+styles = 
+  [ HL.select_ coreLayout ( do
+      height $ vh 100.0
+      width  $ pct 100.0
+      display flex
+      justifyContent spaceAround
+    )
+  , HL.select_ bodyContent ( do
+      width $ rem 30.0
+      margin (rem 1.0) (rem 1.0) (rem 1.0) (rem 1.0)
+      padding (rem 1.0) (rem 1.0) (rem 1.0) (rem 1.0)
+      boxShadow (rem 0.25) (rem 0.25) (rem 0.25) (hsla 0.0 0.0 0.0 0.5)
+      border solid (px 2.0) (hsla 0.0 0.0 0.0 0.5)
+  )   
+  ]
+
+-- coreLayoutSelector = 
 
 type State =
   { route :: Route }
@@ -45,13 +81,15 @@ type Input =
 -- 
 -- For a detailed explanation of what's going on here, please see this issue:
 -- https://github.com/thomashoneyman/purescript-halogen-realworld/issues/20
-type ChildQuery = Coproduct2
+type ChildQuery = Coproduct3
+  Header.Query
   Home.Query
   -- Login.Query
   Register.Query
   -- Watched.Query
 
-type ChildSlot = Either2
+type ChildSlot = Either3
+  Unit
   Unit
   Unit
 
@@ -86,10 +124,16 @@ component =
     pure a
 
   render :: State -> H.ParentHTML Query ChildQuery ChildSlot m
-  render { route } = case route of
-    Home -> 
-      HH.slot' CP.cp1 unit Home.component unit absurd
-    -- Login -> 
-    --   HH.slot' CP.cp2 unit Login.component unit absurd
-    Register -> 
-      HH.slot' CP.cp2 unit Register.component unit absurd
+  render { route } = 
+    HH.div [ HL.class_ coreLayout] [
+      HH.div [ HL.class_ bodyContent ]
+      [ HH.slot' CP.cp1 unit Header.component route absurd
+      , case route of
+          Home -> 
+            HH.slot' CP.cp2 unit Home.component unit absurd
+          -- Login -> 
+          --   HH.slot' CP.cp2 unit Login.component unit absurd
+          Register -> 
+            HH.slot' CP.cp3 unit Register.component unit absurd
+      ]
+    ]
