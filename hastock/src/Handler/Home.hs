@@ -22,8 +22,8 @@ getHomeJSR = sendFile "text/javascript" "static/index.js"
 getQuoteR :: Text -> HandlerFor App Value
 getQuoteR = getQuote
 
-insertR :: Text -> HandlerFor App Value
-insertR = \stockSymbol -> do
+getInsertR :: Text -> HandlerFor App Value
+getInsertR = \stockSymbol -> do
   let Entity userId user = sampleUser
   result <- runDB $ insertKey userId user
   liftIO $ print result
