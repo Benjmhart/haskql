@@ -17,6 +17,8 @@ import Data.Aeson             (fromJSON)
 import Data.Aeson
 import Data.Text as T
 import Data.Char
+import Yesod.Auth.Util.PasswordStore
+-- import Crypto.KDF.BCrypt
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -40,11 +42,17 @@ postRegisterR = do
     body <- requireJsonBody :: Handler Value
     let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
     let validatedUser = passwordValidator =<< emailValidator =<< nameValidator =<< unvalidatedUser
-    print validatedUser
+    let hashedPassword = ((flip makePassword) 10 . encodeUtf8 . password) <$> validatedUser
+    let validatedUser' = (liftM2 makeValidatedUser) validatedUser hashedPassword
+    print validatedUser'
   -- Encrypt Password
   -- Insert
   -- Generate JWT
   -- Return JWT
+
+makeValidatedUser :: UnvalidatedUser -> ByteString -> Result User
+makeValidatedUser (UnvalidatedUser name email _) hashedPassword
+  = Success $ User name email $ decodeUtf8 hashedPassword 
 
 weirdChars :: Char -> Bool
 weirdChars char = T.any (== char) ";/\\(){}[]"
