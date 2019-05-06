@@ -1,47 +1,46 @@
 module Halogen.Theme where
   
-import Prelude (discard, ($), (<>))
+import Prelude ((<>))
 import Data.Array(concat)
-import Data.NonEmpty (NonEmpty(..))
 import Data.Foldable (foldl)
-import CSS.Size (pct, nil)
-import CSS.Font as FONT
-import CSS.Property as CP
-import CSS ((?), CSS, html, body, height, width, margin, fontFamily)
-import CSS.AdditionalProperties (textRendering, webKitFontSmoothing)
-import Component.Router as Router
-import Component.Header as Header
-import CSS.Overflow as OF
+import CSS (CSS)
+import Atomic.PrimaryButton.Styles as PB
+import Atomic.TextField.Styles as TF
+import Atomic.FieldLabel.Styles as FL
+import Atomic.Field.Styles as F
+import Atomic.LoadingDisplay.Styles as LD
+import Atomic.ErrorDisplay.Styles as ED
+import Atomic.StockResult.Styles as SR
+import Atomic.SubHeader.Styles as SH
+import Core.Router.Styles as Router
+import Core.Header.Styles as Header
+import Page.SymbolSearch.Styles as SS
+import Page.Register.Styles as Register
+import Theme.BaseStyle as BS
 
 
 
 theme :: CSS
-theme = foldl (<>) baseStyle componentStyles
+theme = foldl (<>) BS.style componentStyles
 
 componentStyles :: Array CSS
 componentStyles = concat 
   [ Router.styles
   , Header.styles
+  , Register.styles
+  , SS.styles
+  , PB.styles
+  , TF.styles
+  , FL.styles
+  , F.styles
+  , LD.styles
+  , ED.styles
+  , SR.styles
+  , SH.styles
   ]
 
-fontStrings :: Array String
-fontStrings = []
 
-fontValues :: NonEmpty Array FONT.GenericFontFamily
-fontValues = NonEmpty (FONT.GenericFontFamily $ CP.value "Roboto")
-  [FONT.sansSerif]
 
-baseStyle :: CSS
-baseStyle = do
-  html ? do
-    height $ pct 100.0
-  body ? do
-    height $ pct 100.0
-    width  $ pct 100.0
-    margin nil nil nil nil
-    fontFamily fontStrings fontValues
-    textRendering "optimizeLegibility"
-    webKitFontSmoothing "antialiased"
-    OF.overflow $ OF.hidden
+
   
         

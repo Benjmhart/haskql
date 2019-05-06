@@ -1,68 +1,24 @@
-module Component.Router (Input, State, Query(..), component, styles) where
+module Core.Router (Input, State, Query(..), component) where
 
 import Prelude
 
 import Capability.LogMessages (class LogMessages)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
--- import Conduit.Capability.Resource.Article (class ManageArticle)
--- import Conduit.Capability.Resource.Comment (class ManageComment)
--- import Conduit.Capability.Resource.Tag (class ManageTag)
--- import Conduit.Capability.Resource.User (class ManageUser)
--- import Conduit.Data.Profile (Profile)
 import Model.Route (Route(..))
--- import Conduit.Page.Editor as Editor
-import Component.SymbolSearch as Home
-import Component.Register as Register
-import Component.Header as Header
--- import Conduit.Page.Login as Login
--- import Conduit.Page.Profile (Tab(..))
--- import Conduit.Page.Profile as Profile
--- import Conduit.Page.Register as Register
--- import Conduit.Page.Settings as Settings
--- import Conduit.Page.ViewArticle as ViewArticle
+import Page.SymbolSearch as Home
+import Page.Register as Register
+import Core.Header as Header
 import Control.Monad.Reader (class MonadAsk)
 import Data.Either.Nested (Either3)
 import Data.Functor.Coproduct.Nested (Coproduct3)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
--- import Effect.Ref (Ref)
 import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
--- import Halogen.HTML.Properties as HP
-import CSS (CSS, height, width, display, padding, margin)
-import CSS.Size (pct, rem, px, vh)
-import CSS.Display(flex)
-import CSS.Flexbox(justifyContent, spaceAround)
-import CSS.Box (boxShadow)
-import CSS.Color(hsla)
-import CSS.Border (border, solid)
-
--- class names
-coreLayout :: String
-coreLayout = "core-layout"
-
-bodyContent :: String
-bodyContent = "body-content"
-
-styles :: Array CSS
-styles = 
-  [ HL.select_ coreLayout ( do
-      height $ vh 100.0
-      width  $ pct 100.0
-      display flex
-      justifyContent spaceAround
-    )
-  , HL.select_ bodyContent ( do
-      width $ rem 30.0
-      margin (rem 1.0) (rem 1.0) (rem 1.0) (rem 1.0)
-      padding (rem 1.0) (rem 1.0) (rem 1.0) (rem 1.0)
-      boxShadow (rem 0.25) (rem 0.25) (rem 0.25) (hsla 0.0 0.0 0.0 0.5)
-      border solid (px 2.0) (hsla 0.0 0.0 0.0 0.5)
-  )   
-  ]
+import Core.Router.Styles (coreLayout, bodyContent)
 
 -- coreLayoutSelector = 
 

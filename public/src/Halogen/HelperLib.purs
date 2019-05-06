@@ -1,6 +1,6 @@
 module Halogen.HelperLib where
 
-import Prelude (Unit, ($), (<<<), (<>))
+import Prelude (Unit, ($), (<<<), (<>), flip)
 import Data.Maybe (Maybe(..))
 -- import Halogen as H
 import Halogen.HTML as HH
@@ -8,13 +8,9 @@ import Halogen.HTML.Properties as HP
 import Web.Event.Event as WEE
 import Web.Event.Internal.Types (Event)
 import Effect (Effect)
-import CSS (CSS, fromString)
--- import CSS.Selector (Selector(..))
-import CSS.Stylesheet(select)
+import CSS.Size (Size)
 
--- make a css class selector
-select_ :: String -> CSS -> CSS
-select_ = select <<< fromString <<< ((<>) ".")
+
 
 class_ :: forall r i. String -> HH.IProp ( class :: String | r ) i
 class_ = HP.class_ <<< HH.ClassName
