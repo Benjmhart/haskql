@@ -18,6 +18,7 @@ import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
+import Halogen.Router as HR
 import Core.Router.Styles (coreLayout, bodyContent)
 
 -- coreLayoutSelector = 
