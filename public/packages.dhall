@@ -128,6 +128,29 @@ let additions =
       ]
       "https://github.com/thomashoneyman/purescript-slug.git"
       "v0.2.0"
+  , exitcodes = 
+    mkPackage
+      ([] : List Text)
+      "https://github.com/Risto-Stevcev/purescript-exitcodes.git"
+      ""
+  , optparse =
+    mkPackage
+      [ "prelude"
+      , "free"
+      , "memoize"
+      , "effect"
+      , "ordered-collections"
+      , "console"
+      , "arrays"
+      , "exists"
+      , "exitcodes"
+      , "node-process"
+      , "transformers"
+      , "strings"
+      ]
+      "https://github.com/f-o-a-m/purescript-optparse.git"
+      ""
+
   }
 
 in  upstream ⫽ overrides ⫽ additions
