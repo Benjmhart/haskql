@@ -7,7 +7,6 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
-import Component.Router as Router
 import Routing.Hash (getHash, matchesWith)
 import Routing.Duplex (parse)
 import Halogen (liftEffect)
@@ -20,7 +19,8 @@ import Effect.Ref as Ref
 import Model.Route (routeCodec)
 import Model.AppEnv (AppEnv, runAppM)
 import Halogen.Theme (theme)
-import Component.Style (mountStyles)
+import Core.Router as Router
+import Core.Style (mountStyles)
 
 
 -- | Run the app.
@@ -32,6 +32,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   -- landing page of the user - in case they did not navigate to home route
   -- this gets handed off to the router once we have one in place
   initialHash <- H.liftEffect $ getHash
+  -- TODO - use browser routing instead of hashRouting
   -- TODO - read a token from local storage and see if the user is logged in here
   -- liftEffect readToken >>= traverse_ \token -> do
   --   let requestOptions = { endpoint: User, method: Get }

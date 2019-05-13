@@ -1,4 +1,4 @@
-module Component.StockResult where
+module Atomic.StockResult where
   
 import Prelude (($), (<>))
 
@@ -6,14 +6,19 @@ import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 -- import Data.Array
 import Halogen.HTML as HH
+import Halogen.HelperLib as HL
 
 import Model.Quote (Quote)
 
-component :: forall p i. Either String (Maybe Quote) -> (HH.HTML p i)
-component st = 
-      HH.div_ $
+import Atomic.ErrorDisplay (errorDisplay)
+import Atomic.StockResult.Styles (stockResult')
+
+stockResult :: forall p i. Either String (Maybe Quote) -> (HH.HTML p i)
+stockResult st = 
+      HH.div 
+        [ HL.class_ stockResult' ]
         case st of
-          Left err -> [ HH.p_ [ HH.text (err) ] ]
+          Left err -> [ errorDisplay err ]
           Right Nothing -> []
           Right (Just q) ->
             [ HH.h2_ [ HH.text $  q.symbol <> " Quote:" ]

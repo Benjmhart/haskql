@@ -1,4 +1,4 @@
-module Component.Register (State, Query(..), component) where
+module Page.Register (State, Query(..), component) where
 
 import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($))
 
@@ -19,11 +19,18 @@ import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
-import Model.Route(Route(..))
-import Capability.Navigate (class Navigate, navigate)
+-- import Model.Route(Route(..))
+import Capability.Navigate (class Navigate)
+import Atomic.PrimaryButton (primaryButton)
+import Atomic.FieldLabel (fieldLabel_)
+import Atomic.TextField (textField)
+import Atomic.Field (field_)
+import Atomic.LoadingDisplay (loadingDisplay)
+import Atomic.SubHeader (subHeader)
+import Atomic.ErrorDisplay (errorDisplay)
+import Page.Register.Styles (regForm, regLoginButtonWrapper)
 
 
--- TODO - result and error should just be captured as one Either value
 type State =
   { loading :: Boolean
   , email :: String
@@ -54,38 +61,43 @@ component =
   initialState :: State
   initialState = { loading: false, email: "", password: "", error: Nothing}
 
-  -- TODO - break this up into smaller components
   render :: State -> H.ComponentHTML Query
   render st =
-    HH.form_ $
-      [ HH.h1_ [ HH.text "Register" ]
-      , HH.label_
-          [ HH.div_ [ HH.text "email: " ]
-          , HH.input
-              [ HP.value st.email
-              , HE.onValueInput (HE.input SetEmail)
+    HH.div_
+      [ subHeader "Register"
+      , HH.form 
+          [HL.class_ regForm]
+          -- TODO make the fields width adjustable
+          [ field_
+              [ fieldLabel_ [ HH.text "Email: " ]
+              , textField
+                  [ HP.value st.email
+                  , HE.onValueInput (HE.input SetEmail)
+                  ]
               ]
-          ]
-      , HH.label_
-          [ HH.div_ [ HH.text "Password:" ]
-          , HH.input
-              [ HP.value st.password
-              , HE.onValueInput (HE.input SetPassword)
+          , field_
+              [ fieldLabel_ [ HH.text "Password:" ]
+              , textField
+                  [ HP.value st.password
+                  , HE.onValueInput (HE.input SetPassword)
+                  ]
               ]
+          , HH.div
+              [ HL.class_ regLoginButtonWrapper ] 
+              [ primaryButton
+                  [ HP.disabled st.loading
+                  , HE.onClick $ HL.inputR \e ->
+                                  PreventDefault (toEvent e) $
+                                  H.action $ Submit
+                  ]
+                  [ HH.text "submit" ]
+              ]
+          , loadingDisplay st.loading
+          , HH.div_ $
+              case st.error of
+                Nothing -> []
+                Just err -> [ errorDisplay err ]
           ]
-      , HH.button
-          [ HP.disabled st.loading
-          , HE.onClick $ HL.inputR \e ->
-                          PreventDefault (toEvent e) $
-                          H.action $ Submit
-          ]
-          [ HH.text "submit" ]
-      , HH.p_
-          [ HH.text (if st.loading then "Working..." else "") ]
-      , HH.div_ $
-          case st.error of
-            Nothing -> []
-            Just err -> [ HH.p_ [ HH.text (err) ] ]
       ]
 
   --  TODO: pull out pure parts into their own functions
@@ -98,7 +110,7 @@ component =
       H.modify_ (_ { password = password })
       pure next
     Submit next -> do
-    --TODO - move  the API call here + parsing to a service file
+    --TODO - move  the API call here + parsing to a capability file
       email <- H.gets _.email
       password <- H.gets _.password
       apiUrl <- asks _.apiUrl

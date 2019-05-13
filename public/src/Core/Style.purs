@@ -1,4 +1,4 @@
-module Component.Style where
+module Core.Style where
   
 
 
