@@ -2,8 +2,7 @@ module CSS.Additional where
   
 import Prelude (($), (<<<), (<>), flip)
 import Data.Int (toNumber)
-import CSS.Stylesheet(select)
-import CSS.Stylesheet (key)
+import CSS.Stylesheet(select, key)
 import CSS.String (fromString)
 import CSS (CSS, margin, padding, Size)
 import CSS.Border (borderRadius)

@@ -3,12 +3,10 @@ module Capability.Resource.FetchQuote where
 import Prelude ((<<<), class Monad)
 
 import Control.Monad.Trans.Class (lift)
-import Api.Endpoint(Endpoint, endpointCodec)
-import Data.Newtype (class Newtype)
 import Halogen (HalogenM)
 import Data.Maybe(Maybe)
 import Data.Either (Either)
-import Model.Quote (Quote(..))
+import Model.Quote (Quote)
 import Model.StockSymbol
 
 

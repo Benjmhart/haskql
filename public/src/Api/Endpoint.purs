@@ -15,7 +15,7 @@ import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Lens.Iso.Newtype (_Newtype)
+-- import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Maybe (Maybe)
 -- import Conduit.Data.Comment (CommentId)
 -- import Conduit.Data.Route (slug, uname)
@@ -70,7 +70,7 @@ type Pagination = { | PaginationRep  }
 -- | create an encompassing sum type to represent all endpoints. With this type, requests to 
 -- | invalid endpoints (endpoints not captured in this type) will fail to compile.
 data Endpoint = Register-- TODO make Email/Password constructor
-              | FetchQuote String -- TODO make a symbol constructor
+              | FetchQuote String 
   --login, forgot, changepassword, etc.
 derive instance genericEndpoint :: Generic Endpoint _
 

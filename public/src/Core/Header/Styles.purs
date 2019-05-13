@@ -5,10 +5,8 @@ import CSS (CSS, color, display, marginTop, nil)
 import CSS.Display(flex)
 import CSS.Flexbox(justifyContent, flexStart)
 import CSS.Additional((??), margin2)
-import Model.Route(Route(..))
 
 import Theme.Values (rem2, primary, headerFontSize)
-import Core.Header.Styles (header, titleBar, brand, nav, navItem, navItemLink)
 
 -- Class names
 header :: String

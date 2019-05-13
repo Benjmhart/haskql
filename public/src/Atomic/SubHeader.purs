@@ -1,6 +1,6 @@
 module Atomic.SubHeader where
   
-import Prelude (discard)
+-- import Prelude (discard)
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
 import Atomic.SubHeader.Styles (subHeader')

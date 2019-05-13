@@ -1,15 +1,12 @@
 module Page.SymbolSearch ( State, Query(..), component) where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($), (<<<), (<>), (=<<), (<$>), join)
+import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
-import Data.Bifunctor(lmap)
 import Data.Newtype (unwrap)
 import Foreign(ForeignError)
 import Data.List.NonEmpty (NonEmptyList, singleton)
-import Effect.Aff(try)
 import Effect.Aff.Class (class MonadAff)
-import Effect.Console (log)
 -- import Effect.Exception (error, message)
 -- import Options.Applicative.Internal.Utils
 import Halogen as H
@@ -18,12 +15,11 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.HelperLib as HL
 import Capability.Resource.FetchQuote (class FetchQuote, fetchQuote)
-import Affjax as AX
-import Affjax.ResponseFormat as AXRF
-import Simple.JSON as JSON
+import Effect.Console (log)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
+import Affjax.ResponseFormat as AXRF
 import Model.Quote (Quote)
 import Model.StockSymbol (StockSymbol(..))
 import Model.Urls (ApiUrl)
@@ -115,7 +111,10 @@ component =
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
       case symbol of 
-        (StockSymbol "") -> pure next
+        (StockSymbol "") -> do
+          H.liftEffect $ log $ "empty"
+          H.modify_ (_ { result =  Left "You must enter a stock symbol" })
+          pure next
         _                -> do 
           H.modify_ (_ { loading = true, result = (Right Nothing) })
           parsed <- fetchQuote symbol

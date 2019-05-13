@@ -17,11 +17,11 @@ module Api.Request
 
 import Prelude
 
-import Affjax (Request, printResponseFormatError, request)
+import Affjax (Request)
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
-import Api.Endpoint (Endpoint(..), endpointCodec)
+import Api.Endpoint (Endpoint, endpointCodec)
 -- import Conduit.Data.Email (Email)
 -- import Conduit.Data.Profile (Profile, decodeProfile)
 -- import Conduit.Data.Username (Username)

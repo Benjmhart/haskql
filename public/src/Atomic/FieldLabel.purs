@@ -5,8 +5,8 @@ import Data.Array (concat)
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
 import DOM.HTML.Indexed (HTMLdiv)
-import CSS (CSS)
-import CSS.Additional ( (??))
+-- import CSS (CSS)
+-- import CSS.Additional ( (??))
 import Atomic.FieldLabel.Styles (fieldLabel')
 
 -- TODO - add dynamic changes for placeholder and selected  states

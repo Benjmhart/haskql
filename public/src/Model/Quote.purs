@@ -2,7 +2,6 @@ module Model.Quote where
 
 -- TODO make a newType wrapper for Quote
 
-import Data.Maybe (Maybe(..))
 
 type Quote  = { "symbol"              :: String
               , "open"                :: String
