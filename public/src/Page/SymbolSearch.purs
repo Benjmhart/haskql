@@ -4,6 +4,7 @@ import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($), (<<<), (
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Bifunctor(lmap)
+import Data.Newtype (unwrap)
 import Foreign(ForeignError)
 import Data.List.NonEmpty (NonEmptyList, singleton)
 import Effect.Aff(try)
@@ -16,6 +17,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.HelperLib as HL
+import Capability.Resource.FetchQuote (class FetchQuote, fetchQuote)
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Simple.JSON as JSON
@@ -23,6 +25,8 @@ import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 import Model.Quote (Quote)
+import Model.StockSymbol (StockSymbol(..))
+import Model.Urls (ApiUrl)
 import Atomic.StockResult (stockResult)
 import Atomic.PrimaryButton (primaryButton)
 import Atomic.FieldLabel (fieldLabel_)
@@ -39,7 +43,7 @@ transformError (AXRF.ResponseFormatError e _) = singleton e
 
 type State =
   { loading :: Boolean
-  , symbol :: String
+  , symbol :: StockSymbol
   , result :: Either String (Maybe Quote)
   }
 
@@ -51,7 +55,8 @@ data Query a
 
 component :: forall m r
     . MonadAff m
-   => MonadAsk { apiUrl :: String | r } m
+   => MonadAsk { apiUrl :: ApiUrl | r } m
+   => FetchQuote m
    => H.Component HH.HTML Query Unit Void m
 component =
   H.component
@@ -63,7 +68,7 @@ component =
   where
 
   initialState :: State
-  initialState = { loading: false, symbol: "", result: Right Nothing}
+  initialState = { loading: false, symbol: StockSymbol "", result: Right Nothing}
 
   -- TODO - break this up into smaller components
   render :: State -> H.ComponentHTML Query
@@ -76,7 +81,7 @@ component =
               [ fieldLabel_
                 [ HH.text "Stock Symbol: " ]
               , textField
-                  [ HP.value st.symbol
+                  [ HP.value $ unwrap st.symbol
                   , HE.onValueInput (HE.input SetSymbol)
                   ]
               ]
@@ -101,7 +106,7 @@ component =
   eval = case _ of
   -- TODO: validate stock symbol and make a symbol type
     SetSymbol symbol next -> do
-      H.modify_ (_ { symbol = symbol
+      H.modify_ (_ { symbol = StockSymbol symbol
                    , result = Right Nothing
                    })
       pure next
@@ -109,22 +114,14 @@ component =
     --TODO - move  the API call here + parsing to a monad capability file
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
-      H.liftEffect $ log $ "api url in use: " <> apiUrl
-      let reqUrl = apiUrl <> "/stocks/" <> symbol
-      H.modify_ (_ { loading = true, result = (Right Nothing) })
-      response <- H.liftAff $ try $ AX.get AXRF.string (reqUrl)
-      let nested = (networkErrorString $ _.body <$> response) :: Either String (Either AXRF.ResponseFormatError String)
-      let rb = (join $ responseErrorToString <$> nested) :: Either String String
-      let parsed = safeParseJSON =<< rb
-      H.modify_ (_ { loading = false, result = parsed })
-      pure next
+      case symbol of 
+        (StockSymbol "") -> pure next
+        _                -> do 
+          H.modify_ (_ { loading = true, result = (Right Nothing) })
+          parsed <- fetchQuote symbol
+          H.modify_ (_ { loading = false, result = parsed })
+          pure next
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
       eval q
-    where
-      -- message from Effect.Exception to get network error as string
-      networkErrorString = (lmap (\_ -> "Network error")) 
-      responseErrorToString = lmap AXRF.printResponseFormatError
-      -- (unLines <<< (map renderForeignError) to lmap and get errors
-      safeParseJSON = lmap (\_ -> "Invalid Symbol") <<< JSON.readJSON
 

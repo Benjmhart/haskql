@@ -2,29 +2,36 @@ module Model.AppEnv where
 
 import Prelude
 
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, try)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 -- import Effect.Ref (Ref)
 import Data.Maybe (Maybe(..))
+import Data.Bifunctor(lmap)
+import Data.Newtype (class Newtype, unwrap)
 -- import Data.Either (Either(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Effect.Exception (Error)
+import Simple.JSON as JSON
 import Type.Equality (class TypeEquals, from)
 import Control.Monad.Error.Class(class MonadThrow, class MonadError)
 import Capability.Now (class Now)
 import Capability.LogMessages (class LogMessages)
 import Capability.Navigate (class Navigate, navigate)
+import Capability.Resource.FetchQuote (class FetchQuote, fetchQuote)
+import Halogen as H
 import Effect.Now as Now
 import Effect.Console as Console
-import Routing.Duplex (print)
-import Routing.Hash (setHash)
+import Data.Either(Either)
+import Affjax as AX
+import Affjax.ResponseFormat as AXRF
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Model.Log as Log
 import Model.Route as Route
 import Api.Request as Request
 import Halogen.Router (pushRoute)
+import Model.Urls
 
 type AppEnv =  
   { logLevel    :: LogLevel
@@ -37,11 +44,9 @@ type AppEnv =
 --TODO - make these newTypes or DataTypes
 type LogLevel = String
 
-type ApiUrl = String
-
-type BaseUrl = String
 
 newtype AppM a = AppM (ReaderT AppEnv Aff a)
+
 
 runAppM :: AppEnv -> AppM ~> Aff
 runAppM env (AppM m) = runReaderT m env
@@ -80,3 +85,22 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< Ref.write Nothing =<< asks _.currentUser
     liftEffect Request.removeToken 
     navigate Route.Home
+
+instance fetchQuoteAppM :: FetchQuote AppM where
+  fetchQuote ss = do
+      let symbol = unwrap ss
+      apiUrl <- asks _.apiUrl
+      H.liftEffect $ Console.log $ "api url in use: " <> (unwrap apiUrl)
+      let reqUrl = (unwrap apiUrl) <> "/stocks/" <> symbol
+      response <- H.liftAff $ try $ AX.get AXRF.string (reqUrl)
+      let 
+        nested = (networkErrorString $ _.body <$> response) :: Either String (Either AXRF.ResponseFormatError String) 
+        rb = (join $ responseErrorToString <$> nested) :: Either String String
+        parsed = safeParseJSON =<< rb
+      pure parsed
+    where
+      -- message from Effect.Exception to get network error as string
+      networkErrorString = (lmap (\_ -> "Network error")) 
+      responseErrorToString = lmap AXRF.printResponseFormatError
+      -- (unLines <<< (map renderForeignError) to lmap and get errors
+      safeParseJSON = lmap (\_ -> "Invalid Symbol") <<< JSON.readJSON
