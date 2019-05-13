@@ -7,18 +7,16 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.VDom.Driver (runUI)
-import Routing.Hash (getHash, matchesWith)
-import Routing.Duplex (parse)
-import Halogen (liftEffect)
 
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
 -- import Effect.Ref (Ref) // 
+import Effect.Console (log)
 import Effect.Ref as Ref
 
-import Model.Route (routeCodec)
 import Model.AppEnv (AppEnv, runAppM)
 import Halogen.Theme (theme)
+import Halogen.Router (getRoute, navListen)
 import Core.Router as Router
 import Core.Style (mountStyles)
 
@@ -31,7 +29,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   currentUser <- H.liftEffect $ Ref.new (Nothing :: Maybe String)
   -- landing page of the user - in case they did not navigate to home route
   -- this gets handed off to the router once we have one in place
-  initialHash <- H.liftEffect $ getHash
+  initialRoute <- H.liftEffect $ getRoute
   -- TODO - use browser routing instead of hashRouting
   -- TODO - read a token from local storage and see if the user is logged in here
   -- liftEffect readToken >>= traverse_ \token -> do
@@ -47,12 +45,12 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
     rootComponent = H.hoist (runAppM appEnv) Router.component
   --
   -- run ReaderT..build 
-    initialRoute = hush $ parse routeCodec initialHash
   halogenStyle <- mountStyles theme
-  halogenIO <- runUI rootComponent initialRoute body
+  halogenIO <- runUI rootComponent (hush initialRoute) body
   
-  void $ liftEffect $ matchesWith (parse routeCodec) \old new ->
-    when (old /= Just new) do
-      launchAff_ $ halogenIO.query $ H.action $ Router.Navigate new
+  void $ H.liftEffect $ navListen \new -> do
+    case new of
+      Nothing -> log "invalid route"
+      Just a -> launchAff_ $ halogenIO.query $ H.action $ Router.Navigate a
 
   pure unit

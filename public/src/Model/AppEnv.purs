@@ -24,6 +24,7 @@ import Effect.Ref as Ref
 import Model.Log as Log
 import Model.Route as Route
 import Api.Request as Request
+import Halogen.Router (pushRoute)
 
 type AppEnv =  
   { logLevel    :: LogLevel
@@ -73,7 +74,7 @@ instance logMessagesAppM :: LogMessages AppM where
 
 instance navigateAppM :: Navigate AppM where
   navigate = 
-    liftEffect <<< setHash <<< print Route.routeCodec 
+    liftEffect <<< pushRoute 
 
   logout = do
     liftEffect <<< Ref.write Nothing =<< asks _.currentUser
