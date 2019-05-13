@@ -1,6 +1,6 @@
 module Halogen.HelperLib where
 
-import Prelude (Unit, ($), (<<<), (<>), flip)
+import Prelude (Unit, ($), (<<<))
 import Data.Maybe (Maybe(..))
 -- import Halogen as H
 import Halogen.HTML as HH
@@ -8,7 +8,6 @@ import Halogen.HTML.Properties as HP
 import Web.Event.Event as WEE
 import Web.Event.Internal.Types (Event)
 import Effect (Effect)
-import CSS.Size (Size)
 
 
 

@@ -5,6 +5,7 @@ import Prelude
 import Capability.LogMessages (class LogMessages)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
+import Capability.Resource.FetchQuote (class FetchQuote)
 import Model.Route (Route(..))
 import Page.SymbolSearch as Home
 import Page.Register as Register
@@ -18,7 +19,7 @@ import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
-import Halogen.Router as HR
+import Model.Urls (ApiUrl)
 import Core.Router.Styles (coreLayout, bodyContent)
 
 -- coreLayoutSelector = 
@@ -57,7 +58,8 @@ component
   => Now m
   => LogMessages m
   => Navigate m
-  => MonadAsk { apiUrl :: String | r } m
+  => MonadAsk { apiUrl :: ApiUrl | r } m
+  => FetchQuote m 
   -- => ManageUser m
   -- => ManageArticle m
   -- => ManageComment m

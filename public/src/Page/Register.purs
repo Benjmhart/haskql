@@ -29,6 +29,7 @@ import Atomic.LoadingDisplay (loadingDisplay)
 import Atomic.SubHeader (subHeader)
 import Atomic.ErrorDisplay (errorDisplay)
 import Page.Register.Styles (regForm, regLoginButtonWrapper)
+import Model.Urls(ApiUrl)
 
 
 type State =
@@ -47,7 +48,7 @@ data Query a
 component :: forall m r
     . MonadAff m
    => Navigate m
-   => MonadAsk { apiUrl :: String | r } m
+   => MonadAsk { apiUrl :: ApiUrl | r } m
    => H.Component HH.HTML Query Unit Void m
 component =
   H.component

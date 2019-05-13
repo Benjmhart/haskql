@@ -15,15 +15,15 @@ import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Maybe (Maybe(..))
+-- import Data.Lens.Iso.Newtype (_Newtype)
+import Data.Maybe (Maybe)
 -- import Conduit.Data.Comment (CommentId)
 -- import Conduit.Data.Route (slug, uname)
 -- import Conduit.Data.Username (Username)
-import Routing.Duplex (RouteDuplex', int, optional, prefix, root, segment, string)
+import Routing.Duplex (RouteDuplex', root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
-import Routing.Duplex.Generic.Syntax ((/), (?))
-import Slug (Slug)
+import Routing.Duplex.Generic.Syntax ((/))
+-- import Slug (Slug)
 
 -- | First, let's define a few types necessary for our larger `Endpoint` type.
 
@@ -70,7 +70,7 @@ type Pagination = { | PaginationRep  }
 -- | create an encompassing sum type to represent all endpoints. With this type, requests to 
 -- | invalid endpoints (endpoints not captured in this type) will fail to compile.
 data Endpoint = Register-- TODO make Email/Password constructor
-              | FetchQuote  -- TODO make a symbol constructor
+              | FetchQuote String 
   --login, forgot, changepassword, etc.
 derive instance genericEndpoint :: Generic Endpoint _
 
@@ -91,7 +91,7 @@ instance showEndpoint :: Show Endpoint where
 endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
   { "Register": "register" / noArgs 
-  , "FetchQuote": "stocks" / noArgs
+  , "FetchQuote": "stocks" / string segment
   }
 
 -- | `routing-duplex` has no existing codec for a `CommentId`, so we'll write our own. 

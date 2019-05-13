@@ -2,7 +2,7 @@ module Halogen.Router (getRoute, navListen, pushRoute) where
 
 import Prelude
 
-import Data.Either (Either(..), hush)
+import Data.Either (Either, hush)
 import Data.Maybe (Maybe)
 import Effect (Effect)
 import Routing.Duplex (print, parse)

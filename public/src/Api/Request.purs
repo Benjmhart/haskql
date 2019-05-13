@@ -17,24 +17,24 @@ module Api.Request
 
 import Prelude
 
-import Affjax (Request, printResponseFormatError, request)
+import Affjax (Request)
 import Affjax.RequestBody as RB
 import Affjax.RequestHeader (RequestHeader(..))
 import Affjax.ResponseFormat as RF
-import Api.Endpoint (Endpoint(..), endpointCodec)
+import Api.Endpoint (Endpoint, endpointCodec)
 -- import Conduit.Data.Email (Email)
 -- import Conduit.Data.Profile (Profile, decodeProfile)
 -- import Conduit.Data.Username (Username)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (decodeJson, (.:))
-import Data.Argonaut.Encode (encodeJson)
-import Data.Bifunctor (lmap)
+-- import Data.Argonaut.Decode (decodeJson, (.:))
+-- import Data.Argonaut.Encode (encodeJson)
+-- import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff.Class (class MonadAff, liftAff)
+-- import Effect.Aff.Class (class MonadAff, liftAff)
 import Routing.Duplex (print)
 import Web.HTML (window)
 import Web.HTML.Window (localStorage)

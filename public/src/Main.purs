@@ -13,8 +13,8 @@ import Data.Maybe (Maybe(..))
 -- import Effect.Ref (Ref) // 
 import Effect.Console (log)
 import Effect.Ref as Ref
-
-import Model.AppEnv (AppEnv, runAppM)
+import Model.Urls (BaseUrl(..), ApiUrl(..))
+import Model.AppEnv ( AppEnv, runAppM)
 import Halogen.Theme (theme)
 import Halogen.Router (getRoute, navListen)
 import Core.Router as Router
@@ -30,7 +30,6 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   -- landing page of the user - in case they did not navigate to home route
   -- this gets handed off to the router once we have one in place
   initialRoute <- H.liftEffect $ getRoute
-  -- TODO - use browser routing instead of hashRouting
   -- TODO - read a token from local storage and see if the user is logged in here
   -- liftEffect readToken >>= traverse_ \token -> do
   --   let requestOptions = { endpoint: User, method: Get }
@@ -40,7 +39,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   --   pure unit
   let 
     appEnv :: AppEnv
-    appEnv = { logLevel, apiUrl, baseUrl, currentUser }
+    appEnv = { logLevel, apiUrl: (ApiUrl apiUrl), baseUrl: (BaseUrl baseUrl), currentUser }
     rootComponent :: H.Component HH.HTML Router.Query Router.Input Void Aff
     rootComponent = H.hoist (runAppM appEnv) Router.component
   --

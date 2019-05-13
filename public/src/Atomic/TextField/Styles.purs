@@ -1,14 +1,12 @@
 module Atomic.TextField.Styles where
 
 import Prelude (discard, (#), ($))
-import CSS (CSS, backgroundColor, color, height, margin, minHeight, textWhitespace, whitespaceNoWrap, width)
+import CSS (CSS, backgroundColor, height, margin, width)
 import CSS.Border (solid, borderBottom)
 import CSS.Size (rem, nil)
-import CSS.Font (bold, fontWeight, bolder)
-import CSS.Text.Transform (textTransform, capitalize)
-import CSS.Additional (borderNone, borderRadius_, padding1, (##), (??))
+import CSS.Additional (borderNone, padding1, (##), (??))
 import CSS.TextAlign (textAlign, center)
-import Theme.Values (buttonFontSize, charcoal, hrem, lightYellow, offWhite, primary, px2, px5, rem1, shadow, standardFontSize, greyHighlight, alertRed)
+import Theme.Values (hrem, lightYellow, px2, rem1, shadow, standardFontSize)
 
 textField' :: String
 textField' = "form-field-text"
