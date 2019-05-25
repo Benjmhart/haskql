@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE DataKinds              #-}
 
@@ -9,15 +10,15 @@ module Handler.Home where
 
 import           Import
 
-import           Handler.Quote.GetQuote         ( getQuote )
-import           Model.User
-import           Model.User                     ( UnvalidatedUser(..) )
-import           Data.Aeson                     ( fromJSON )
-import           Data.Aeson
-import           Data.Text                     as T
-import           Data.Char
-import           Yesod.Auth.Util.PasswordStore  ( makePassword )
--- import Crypto.KDF.BCrypt
+import            Handler.Quote.GetQuote         ( getQuote )
+import            Model.User
+import            Model.User                     ( UnvalidatedUser(..) )
+import            Data.Aeson                     ( fromJSON )
+import            Data.Aeson
+import qualified  Data.Text                     as T
+import            Data.Char
+import            Yesod.Auth.Util.PasswordStore  ( makePassword )
+import qualified  Web.JWT as JWT
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -36,7 +37,7 @@ getInsertR = \stockSymbol -> do
   liftIO $ print result
   return $ toJSON ("" :: String)
 
-postRegisterR :: HandlerFor App ()
+postRegisterR :: HandlerFor App Value
 postRegisterR = do
   body <- requireJsonBody :: Handler Value
   let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
@@ -47,30 +48,30 @@ postRegisterR = do
           =<< unvalidatedUser
   case validatedUser of
     (Error str) -> do
-      print "wrong wrong wrong"
-      putStrLn . T.pack $ str
-      return ()
+      error str
     (Success vu) -> do
       hashedPassword <-
         liftIO $ ((flip makePassword) 10 . encodeUtf8 . password) $ vu
       print hashedPassword
       let validatedUser' = (flip makeValidatedUser $ hashedPassword) $ vu
-      -- We Can't do inserts using insertKey  because it breaks stuff
+      -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
-      --NEXT STEP :  clean up hash, JWT, clean up response and error values
-      -- next next step:   be good at haskell
+      let mySecret = JWT.secret "hello"
+      let jwt = JWT.encodeSigned JWT.HS256 mySecret JWT.def
+      let userResponseJSON = toJSON $ UserResponse jwt
+      return userResponseJSON
 
-      print "yippie!"
-      print key
+data UserResponse = UserResponse { token :: Text }
+  deriving (Generic)
 
-      return ()
+instance ToJSON UserResponse where
+  toJSON = genericToJSON defaultOptions
 
+instance FromJSON UserResponse where
+  parseJSON = genericParseJSON defaultOptions
 
-
-  -- Insert
-  -- Generate JWT
-  -- Return JWT
+-- TODO: handle non-unique entry error (make more readable)
 
 makeValidatedUser :: UnvalidatedUser -> ByteString -> User
 makeValidatedUser (UnvalidatedUser name email _) hashedPassword =
