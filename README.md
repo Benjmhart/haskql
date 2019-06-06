@@ -27,3 +27,14 @@ APIURL - (client) - tells the client whether it
 
 - CSS/Componentization
 - POSTGRES/AUTH
+
+## Example CURLS
+
+#### RegisterR POST
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"name":"Jonathan","email":"jonathan_lorimer@mac.com","password":"Hello123%"}' \
+  http://localhost:3000/api/v1/register
+```
