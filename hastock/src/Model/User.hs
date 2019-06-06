@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE DeriveGeneric              #-}
 
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE QuasiQuotes                #-}
@@ -15,7 +16,19 @@ import Import
 import qualified Database.Persist.TH as PTH
 import Database.Persist.Sql(toSqlKey)
 import Database.Persist (Entity(..))
+import Data.Aeson
 
+data UnvalidatedUser = UnvalidatedUser { name :: Text
+                                       , email :: Text
+                                       , password :: Text } 
+                                       deriving (Generic, Show)
+
+
+instance ToJSON UnvalidatedUser where
+  toJSON = genericToJSON defaultOptions
+
+instance FromJSON UnvalidatedUser where
+  parseJSON = genericParseJSON defaultOptions
 
 PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persistLowerCase|
   User sql=users
@@ -23,7 +36,7 @@ PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persi
     email Text
     password Text
     UniqueEmail email
-    deriving Show Read
+    deriving Show
 |]
 
 sampleUser :: Entity User
