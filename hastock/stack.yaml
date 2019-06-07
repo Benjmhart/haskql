@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: lts-12.26
+resolver: lts-13.24
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -38,7 +38,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-  - graphql-api-0.3.0@sha256:57555fc53e397d341045d315b7172025cf336b8e947247c05c9379dc6bf9e835
+  - jwt-0.7.2@sha256:b5858c05476741b4dc7f9f075bb8c8aca128ed25a9f325d937d370aa3d4910e1
 # Override default flag values for local packages and extra-deps
 # flags: {}
 
