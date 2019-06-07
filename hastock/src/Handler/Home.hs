@@ -31,11 +31,17 @@ getQuoteR :: Text -> HandlerFor App Value
 getQuoteR = getQuote
 
 getInsertR :: Text -> HandlerFor App Value
-getInsertR = \stockSymbol -> do
+getInsertR stockSymbol = do
   let Entity userId user = sampleUser
   result <- runDB $ insertKey userId user
   liftIO $ print result
   return $ toJSON ("" :: String)
+
+getUserR :: Text -> HandlerFor App ()
+getUserR jwt = do
+  let id = JWT.decode jwt
+  print id
+  return ()
 
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
@@ -47,22 +53,23 @@ postRegisterR = do
           =<< nameValidator
           =<< unvalidatedUser
   case validatedUser of
-    (Error str) -> do
-      error str
+    (Error str) -> error str
     (Success vu) -> do
       hashedPassword <-
-        liftIO $ ((flip makePassword) 10 . encodeUtf8 . password) $ vu
+        liftIO $ (flip makePassword 10 . encodeUtf8 . password) vu
       print hashedPassword
-      let validatedUser' = (flip makeValidatedUser $ hashedPassword) $ vu
+      let validatedUser' = (flip makeValidatedUser $ hashedPassword) vu
       -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
       let mySecret = JWT.secret "hello"
       let jwt = JWT.encodeSigned JWT.HS256 mySecret JWT.def
-      let userResponseJSON = toJSON $ UserResponse jwt
+      let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
       return userResponseJSON
 
-data UserResponse = UserResponse { token :: Text }
+data UserResponse = UserResponse { token :: Text
+                                 , name :: Text
+                                 }
   deriving (Generic)
 
 instance ToJSON UserResponse where
