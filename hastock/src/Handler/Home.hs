@@ -15,10 +15,15 @@ import            Model.User
 import            Model.User                     ( UnvalidatedUser(..) )
 import            Data.Aeson                     ( fromJSON )
 import            Data.Aeson
+import            Database.Persist.Sql(fromSqlKey)
 import qualified  Data.Text                     as T
 import            Data.Char
+import qualified  Data.Map                      as Map
 import            Yesod.Auth.Util.PasswordStore  ( makePassword )
 import qualified  Web.JWT as JWT
+
+mySecret :: JWT.Secret
+mySecret = JWT.secret "hello"
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -39,10 +44,21 @@ getInsertR stockSymbol = do
 
 getUserR :: Text -> HandlerFor App ()
 getUserR jwt = do
-  let id = JWT.decode jwt
-  print id
-  return ()
+  let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
+  case parsedJWT of
+    Nothing -> return ()
+    Just (verified) -> do
+        let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
+        case id of
+          Nothing -> return ()
+          Just (id) -> do
+            let parsedId = (fromJSON id) :: Result String
+            print parsedId
+            return ()
+        return ()
+    _ -> return ()
 
+-- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
   body <- requireJsonBody :: Handler Value
@@ -62,8 +78,8 @@ postRegisterR = do
       -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
-      let mySecret = JWT.secret "hello"
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret JWT.def
+      let cs = JWT.def { JWT.unregisteredClaims = Map.fromList [("id", String . tshow . fromSqlKey $ key)] }
+      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
       let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
       return userResponseJSON
 

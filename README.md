@@ -38,3 +38,11 @@ curl --header "Content-Type: application/json" \
   --data '{"name":"Jonathan","email":"jonathan_lorimer@mac.com","password":"Hello123%"}' \
   http://localhost:3000/api/v1/register
 ```
+
+#### UserR GET
+
+```
+curl --header "Content-Type: application/json" \
+  --request GET \
+  http://localhost:3000/api/v1/user/<your-jwt-goes-here>
+```

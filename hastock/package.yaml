@@ -10,9 +10,10 @@ dependencies:
   - yesod-static >=1.6 && <1.7
   - yesod-form >=1.6 && <1.7
   - yesod-auth
-  - persistent
+  - persistent >= 0.3.1
   - persistent-template
   - persistent-postgresql
+  - data-serializer
   - http-types
   - jwt ==0.7.2
   - classy-prelude

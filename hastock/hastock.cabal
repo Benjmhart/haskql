@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 97580fe05fae72459b6943594e7f879caed05935f2ee872370ed987f6ac119fd
+-- hash: d44942ea01906365809109bbab79f640d31d187e8ac3e04ec69c30f86aa02af7
 
 name:           hastock
 version:        0.0.0
@@ -49,6 +49,7 @@ library
     , containers
     , cryptonite >=0.25
     , data-default
+    , data-serializer
     , directory >=1.1 && <1.4
     , fast-logger >=2.2 && <2.5
     , file-embed
@@ -60,7 +61,7 @@ library
     , jwt ==0.7.2
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
-    , persistent
+    , persistent >=0.3.1
     , persistent-postgresql
     , persistent-template
     , safe
@@ -108,6 +109,7 @@ executable hastock
     , containers
     , cryptonite >=0.25
     , data-default
+    , data-serializer
     , directory >=1.1 && <1.4
     , fast-logger >=2.2 && <2.5
     , file-embed
@@ -168,6 +170,7 @@ test-suite hastock-test
     , containers
     , cryptonite >=0.25
     , data-default
+    , data-serializer
     , directory >=1.1 && <1.4
     , fast-logger >=2.2 && <2.5
     , file-embed
@@ -181,7 +184,7 @@ test-suite hastock-test
     , jwt ==0.7.2
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
-    , persistent
+    , persistent >=0.3.1
     , persistent-postgresql
     , persistent-template
     , safe
