@@ -1,6 +1,7 @@
 static/tmp/
 static/combined/
 config/client_session_key.aes
+*.cabal
 *.hi
 *.o
 *.sqlite3
