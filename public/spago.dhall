@@ -6,6 +6,8 @@ You can edit this file as you like.
     "hsql-pub"
 , dependencies =
     [ "affjax"
+    , "argonaut"
+    , "argonaut-codecs"
     , "arrays"
     , "console"
     , "css"

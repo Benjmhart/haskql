@@ -1,10 +1,11 @@
 module Page.Register.Styles where
   
-import Prelude (($), (#))
-import CSS (CSS, display, paddingTop)
+import Prelude (($), (#), discard)
+import CSS (CSS, display, paddingTop, width)
 import CSS.Size (rem)
 import CSS.Display(flex)
-import CSS.Additional ((??))
+import CSS.Flexbox(flexWrap, wrap)
+import CSS.Additional ((??), (##))
 
 regForm :: String
 regForm = "registration-form"
@@ -17,6 +18,9 @@ styles :: Array CSS
 styles = 
   [ regForm ?? do
       display flex 
+      flexWrap wrap
+      width $ 18 ## rem
+
   , regLoginButtonWrapper ?? do
       paddingTop $ 2.25 # rem
   ]

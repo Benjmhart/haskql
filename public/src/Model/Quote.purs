@@ -1,6 +1,6 @@
 module Model.Quote where
 
--- TODO make a newType wrapper for Quote
+-- TODO make a newType/dataType wrapper for Quote
 
 
 type Quote  = { "symbol"              :: String

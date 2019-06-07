@@ -2,10 +2,11 @@ module Core.Router (Input, State, Query(..), component) where
 
 import Prelude
 
-import Capability.LogMessages (class LogMessages)
+import Capability.Log (class Log)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
 import Capability.Resource.FetchQuote (class FetchQuote)
+import Capability.Resource.Register (class Register)
 import Model.Route (Route(..))
 import Page.SymbolSearch as Home
 import Page.Register as Register
@@ -56,9 +57,10 @@ component
    . MonadAff m
   -- => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Now m
-  => LogMessages m
+  => Log m
   => Navigate m
   => MonadAsk { apiUrl :: ApiUrl | r } m
+  => Register m
   => FetchQuote m 
   -- => ManageUser m
   -- => ManageArticle m

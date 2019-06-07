@@ -2,7 +2,7 @@ module Core.Header where
 
 import Prelude (type (~>), Void, discard, identity, pure, ($))
 import Capability.Navigate (class Navigate, navigate)
-import Capability.LogMessages (class LogMessages)
+import Capability.Log (class Log)
 import Effect.Aff.Class (class MonadAff)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
@@ -27,7 +27,7 @@ type Input = Route
 component
   :: forall m 
    . MonadAff m
-  => LogMessages m
+  => Log m
   => Navigate m
   => H.Component HH.HTML Query Input Void m
 component = 

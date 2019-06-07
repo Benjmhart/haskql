@@ -10,15 +10,15 @@ module Handler.Home where
 
 import           Import
 
-import            Handler.Quote.GetQuote         ( getQuote )
-import            Model.User
-import            Model.User                     ( UnvalidatedUser(..) )
-import            Data.Aeson                     ( fromJSON )
-import            Data.Aeson
-import qualified  Data.Text                     as T
-import            Data.Char
-import            Yesod.Auth.Util.PasswordStore  ( makePassword )
-import qualified  Web.JWT as JWT
+import           Handler.Quote.GetQuote         ( getQuote )
+import           Model.User
+import           Model.User                     ( UnvalidatedUser(..) )
+import           Data.Aeson                     ( fromJSON )
+import           Data.Aeson
+import qualified Data.Text                     as T
+import           Data.Char
+import           Yesod.Auth.Util.PasswordStore  ( makePassword )
+import qualified Web.JWT                       as JWT
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -40,6 +40,7 @@ getInsertR = \stockSymbol -> do
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
   body <- requireJsonBody :: Handler Value
+  print body
   let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
   let validatedUser =
         passwordValidator
@@ -48,7 +49,9 @@ postRegisterR = do
           =<< unvalidatedUser
   case validatedUser of
     (Error str) -> do
-      error str
+      print $ "ERRAR" <> str
+      -- error str
+      sendResponseStatus (Status 500 $ fromString str) $ toJSON str
     (Success vu) -> do
       hashedPassword <-
         liftIO $ ((flip makePassword) 10 . encodeUtf8 . password) $ vu
@@ -57,10 +60,12 @@ postRegisterR = do
       -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
-      let mySecret = JWT.secret "hello"
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret JWT.def
+      let mySecret         = JWT.secret "hello"
+      let jwt              = JWT.encodeSigned JWT.HS256 mySecret JWT.def
       let userResponseJSON = toJSON $ UserResponse jwt
       return userResponseJSON
+
+
 
 data UserResponse = UserResponse { token :: Text }
   deriving (Generic)

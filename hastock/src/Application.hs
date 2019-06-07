@@ -42,7 +42,7 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
 import Network.Wai.Middleware.Rewrite       (rewritePureWithQueries, 
                                              PathsAndQueries)
 import Network.Wai.Middleware.Routed        (routedMiddleware)
-import Network.Wai.Middleware.Cors          (simpleCors)
+import Network.Wai.Middleware.Cors          (simpleCors, CorsResourcePolicy(..), simpleCorsResourcePolicy, simpleHeaders, cors)
 import Network.HTTP.Types.Header            (RequestHeaders)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
@@ -107,8 +107,10 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ makeSpaRoutes . simpleCors . logWare $ defaultMiddlewaresNoLogging appPlain
-
+    return $ makeSpaRoutes . corsMiddleware . logWare $ defaultMiddlewaresNoLogging appPlain
+    
+    where 
+      corsMiddleware = cors . const . Just $ simpleCorsResourcePolicy { corsRequestHeaders = simpleHeaders }
 -- TODO: possibly publish this as a helper middleware
 makeSpaRoutes :: Middleware
 makeSpaRoutes = 
