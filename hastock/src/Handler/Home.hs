@@ -15,10 +15,15 @@ import            Model.User
 import            Model.User                     ( UnvalidatedUser(..) )
 import            Data.Aeson                     ( fromJSON )
 import            Data.Aeson
+import            Database.Persist.Sql(fromSqlKey)
 import qualified  Data.Text                     as T
 import            Data.Char
+import qualified  Data.Map                      as Map
 import            Yesod.Auth.Util.PasswordStore  ( makePassword )
 import qualified  Web.JWT as JWT
+
+mySecret :: JWT.Secret
+mySecret = JWT.secret "hello"
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -31,12 +36,29 @@ getQuoteR :: Text -> HandlerFor App Value
 getQuoteR = getQuote
 
 getInsertR :: Text -> HandlerFor App Value
-getInsertR = \stockSymbol -> do
+getInsertR stockSymbol = do
   let Entity userId user = sampleUser
   result <- runDB $ insertKey userId user
   liftIO $ print result
   return $ toJSON ("" :: String)
 
+getUserR :: Text -> HandlerFor App ()
+getUserR jwt = do
+  let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
+  case parsedJWT of
+    Nothing -> return ()
+    Just (verified) -> do
+        let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
+        case id of
+          Nothing -> return ()
+          Just (id) -> do
+            let parsedId = (fromJSON id) :: Result String
+            print parsedId
+            return ()
+        return ()
+    _ -> return ()
+
+-- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
   body <- requireJsonBody :: Handler Value
@@ -47,22 +69,23 @@ postRegisterR = do
           =<< nameValidator
           =<< unvalidatedUser
   case validatedUser of
-    (Error str) -> do
-      error str
+    (Error str) -> error str
     (Success vu) -> do
       hashedPassword <-
-        liftIO $ ((flip makePassword) 10 . encodeUtf8 . password) $ vu
+        liftIO $ (flip makePassword 10 . encodeUtf8 . password) vu
       print hashedPassword
-      let validatedUser' = (flip makeValidatedUser $ hashedPassword) $ vu
+      let validatedUser' = (flip makeValidatedUser $ hashedPassword) vu
       -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
-      let mySecret = JWT.secret "hello"
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret JWT.def
-      let userResponseJSON = toJSON $ UserResponse jwt
+      let cs = JWT.def { JWT.unregisteredClaims = Map.fromList [("id", String . tshow . fromSqlKey $ key)] }
+      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
+      let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
       return userResponseJSON
 
-data UserResponse = UserResponse { token :: Text }
+data UserResponse = UserResponse { token :: Text
+                                 , name :: Text
+                                 }
   deriving (Generic)
 
 instance ToJSON UserResponse where

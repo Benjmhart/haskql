@@ -11,4 +11,5 @@
 /api/v1/stocks/#Text       QuoteR GET
 /api/v1/register           RegisterR POST
 
+/api/v1/user/#Text         UserR GET
 
