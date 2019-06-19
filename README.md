@@ -4,6 +4,26 @@
 
 Development Servers:
 
+to set up development, run
+
+```
+# install stack
+curl -sSL https://get.haskellstack.org/ | sh
+#install postgres + development deps
+sudo apt-get install postgresql python-psycopg2 libpq-dev
+## or the equivalent in brew
+# install spago + purescript
+npm install -g spago purescript@v0.12.5
+
+stack install yesod yesod-bin
+
+# set up postgres
+sudo -u postgres psql
+CREATE DATABASE hastock;
+CREATE USER hastock WITH ENCRYPTED PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE hastock TO hastock;
+```
+
 running `./hastock/stack exec -- yesod devel` will start a development server for the backend.
 
 running `./public/npm start` will start a hot reloading front end server - right now the new component is mounted below the old one - this will be addressed soon.
@@ -27,3 +47,22 @@ APIURL - (client) - tells the client whether it
 
 - CSS/Componentization
 - POSTGRES/AUTH
+
+## Example CURLS
+
+#### RegisterR POST
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"name":"Jonathan","email":"jonathan_lorimer@mac.com","password":"Hello123%"}' \
+  http://localhost:3000/api/v1/register
+```
+
+#### UserR GET
+
+```
+curl --header "Content-Type: application/json" \
+  --request GET \
+  http://localhost:3000/api/v1/user/<your-jwt-goes-here>
+```
