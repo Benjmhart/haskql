@@ -47,13 +47,16 @@ getUserR jwt = do
   let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
   case parsedJWT of
     Nothing -> return ()
-    Just (verified) -> do
+    Just verified -> do
         let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
         case id of
           Nothing -> return ()
-          Just (id) -> do
+          Just id -> do
             let parsedId = (fromJSON id) :: Result String
             print parsedId
+            case parsedId of
+              Success value -> print value
+              _ -> return ()
             return ()
         return ()
     _ -> return ()
