@@ -39,6 +39,9 @@ PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persi
     deriving Show
 |]
 
+instance ToJSON User where
+  toJSON (User userName userEmail _) = object ["username" .= userName, "email" .= userEmail]
+
 sampleUser :: Entity User
 sampleUser = Entity (toSqlKey 1) $ User
     { userName = "admin"

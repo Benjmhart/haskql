@@ -10,17 +10,18 @@ module Handler.Home where
 
 import           Import
 
-import            Handler.Quote.GetQuote         ( getQuote )
-import            Model.User
-import            Model.User                     ( UnvalidatedUser(..) )
-import            Data.Aeson                     ( fromJSON )
-import            Data.Aeson
-import            Database.Persist.Sql(fromSqlKey)
-import qualified  Data.Text                     as T
-import            Data.Char
-import qualified  Data.Map                      as Map
-import            Yesod.Auth.Util.PasswordStore  ( makePassword )
-import qualified  Web.JWT as JWT
+import           Handler.Quote.GetQuote         ( getQuote )
+import           Model.User
+import           Data.Aeson
+import           Database.Persist.Sql           ( fromSqlKey
+                                                , toSqlKey
+                                                )
+import           Database.Persist
+import qualified Data.Text                     as T
+import           Data.Char
+import qualified Data.Map                      as Map
+import           Yesod.Auth.Util.PasswordStore  ( makePassword )
+import qualified Web.JWT                       as JWT
 
 mySecret :: JWT.Secret
 mySecret = JWT.secret "hello"
@@ -42,24 +43,34 @@ getInsertR stockSymbol = do
   liftIO $ print result
   return $ toJSON ("" :: String)
 
-getUserR :: Text -> HandlerFor App ()
+error500 = Status 500 "server error"
+
+getUserR :: Text -> HandlerFor App Value
 getUserR jwt = do
   let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
   case parsedJWT of
-    Nothing -> return ()
+    Nothing       -> sendResponseStatus error500 $ toJSON ("invalid credentials" :: T.Text)
     Just verified -> do
-        let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
-        case id of
-          Nothing -> return ()
-          Just id -> do
-            let parsedId = (fromJSON id) :: Result String
-            print parsedId
-            case parsedId of
-              Success value -> print value
-              _ -> return ()
-            return ()
-        return ()
-    _ -> return ()
+      let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
+      case id of
+        Nothing -> return ""
+        Just id -> do
+          let parsedId = (fromJSON id) :: Result String
+          case parsedId of
+            Error s -> do
+              return $ toJSON s
+            Success value -> do
+              let maybeKey = readIntegral value :: Maybe Int64
+              case maybeKey of
+                Just key -> do
+                  runDB $ do
+                    userRecord <- get (toSqlKey key :: Key User)
+                    case userRecord of
+                      Just user -> do 
+                        let response = toJSON userRecord
+                        return response
+                      Nothing -> return ""
+                Nothing -> return ""
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
@@ -72,17 +83,21 @@ postRegisterR = do
           =<< nameValidator
           =<< unvalidatedUser
   case validatedUser of
-    (Error str) -> error str
-    (Success vu) -> do
-      hashedPassword <-
-        liftIO $ (flip makePassword 10 . encodeUtf8 . password) vu
+    (Error   str) -> error str
+    (Success vu ) -> do
+      hashedPassword <- liftIO
+        $ (flip makePassword 10 . encodeUtf8 . password) vu
       print hashedPassword
       let validatedUser' = (flip makeValidatedUser $ hashedPassword) vu
       -- We Can't do inserts using insertKey because it breaks stuff
       key <- runDB $ insert validatedUser'
       --this successfully updates the DB
-      let cs = JWT.def { JWT.unregisteredClaims = Map.fromList [("id", String . tshow . fromSqlKey $ key)] }
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
+      let
+        cs = JWT.def
+          { JWT.unregisteredClaims =
+            Map.fromList [("id", String . tshow . fromSqlKey $ key)]
+          }
+      let jwt              = JWT.encodeSigned JWT.HS256 mySecret cs
       let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
       return userResponseJSON
 
