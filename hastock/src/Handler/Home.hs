@@ -66,6 +66,13 @@ getUserR jwt = do
                       Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, user doesn't exist" :: T.Text)
                 Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
 
+postLoginR :: HandlerFor App Value
+postLoginR = do
+  body <- requireCheckJsonBody :: Handler Value
+  let loginInfo = fromJSON body :: Result LoginInfo
+  
+  return $ toJSON ("" :: T.Text)
+
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
@@ -89,8 +96,6 @@ postRegisterR = do
           }
       let jwt              = JWT.encodeSigned JWT.HS256 mySecret cs
       return $ toJSON $ UserResponse jwt $ Model.User.name vu
-
--- TODO: handle non-unique entry error (make more readable)
 
 makeValidatedUser :: UnvalidatedUser -> ByteString -> User
 makeValidatedUser (UnvalidatedUser uvName uvEmail _) hashedPassword =

@@ -30,6 +30,18 @@ instance ToJSON UnvalidatedUser where
 instance FromJSON UnvalidatedUser where
   parseJSON = genericParseJSON defaultOptions
 
+data LoginInfo = LoginInfo { loginEmail    :: Text
+                           , loginPassword :: Text 
+                           }
+                           deriving (Generic, Show)
+
+
+instance ToJSON LoginInfo where
+  toJSON = genericToJSON defaultOptions
+
+instance FromJSON LoginInfo where
+  parseJSON = genericParseJSON defaultOptions
+
 PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persistLowerCase|
   User sql=users
     name Text
