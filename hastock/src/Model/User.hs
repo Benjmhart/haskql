@@ -42,9 +42,21 @@ PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persi
 instance ToJSON User where
   toJSON (User userName userEmail _) = object ["username" .= userName, "email" .= userEmail]
 
-sampleUser :: Entity User
-sampleUser = Entity (toSqlKey 1) $ User
-    { userName = "admin"
-    , userEmail = "admin@test.com"
-    , userPassword = "password1"
-    }
+
+data UserResponse = UserResponse { userResponseToken :: Text
+                                 , userResponseName :: Text
+                                 }
+                                 deriving (Generic)
+
+instance ToJSON UserResponse where
+  toJSON = genericToJSON defaultOptions
+
+instance FromJSON UserResponse where
+  parseJSON = genericParseJSON defaultOptions
+
+-- sampleUser :: Entity User
+-- sampleUser = Entity (toSqlKey 1) $ User
+--     { userName = "admin"
+--     , userEmail = "admin@test.com"
+--     , userPassword = "password1"
+--     }
