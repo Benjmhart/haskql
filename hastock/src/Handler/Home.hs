@@ -1,8 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude      #-}
 {-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE DataKinds              #-}
 
@@ -19,7 +17,7 @@ import           Database.Persist.Sql           ( fromSqlKey
 import qualified Data.Text                     as T
 import           Data.Char
 import qualified Data.Map                      as Map
-import           Yesod.Auth.Util.PasswordStore  ( makePassword )
+import           Yesod.Auth.Util.PasswordStore  ( makePassword, verifyPassword )
 import qualified Web.JWT                       as JWT
 
 mySecret :: JWT.Secret
@@ -45,33 +43,49 @@ getUserR :: Text -> HandlerFor App Value
 getUserR jwt = do
   let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
   case parsedJWT of
-    Nothing       -> sendResponseStatus error500 $ toJSON ("credentials in invalid format" :: T.Text)
+    Nothing -> sendResponseStatus error500
+      $ toJSON ("credentials in invalid format" :: T.Text)
     Just verified -> do
-      let dbRecordKeyJSON = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified
+      let dbRecordKeyJSON =
+            lookup "id" . JWT.unregisteredClaims $ JWT.claims verified
       case dbRecordKeyJSON of
-        Nothing -> sendResponseStatus error500 $ toJSON ("credentials missing information " :: T.Text)
-        Just dbRecordKey -> do
-          case ((fromJSON dbRecordKey) :: Result String) of
-            Error s -> do
-              return $ toJSON s
-            Success value -> do
-              let maybeKey = readIntegral value :: Maybe Int64
-              case maybeKey of
-                Just key -> do
-                  runDB $ do
-                    userRecord <- get (toSqlKey key :: Key User)
-                    case userRecord of
-                      Just user -> do 
-                        return $ toJSON user
-                      Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, user doesn't exist" :: T.Text)
-                Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
+        Nothing -> sendResponseStatus error500
+          $ toJSON ("credentials missing information " :: T.Text)
+        Just dbRecordKey -> case (fromJSON dbRecordKey :: Result String) of
+          Error   s     -> sendResponseStatus error500 $ toJSON s
+          Success value -> do
+            let maybeKey = readIntegral value :: Maybe Int64
+            case maybeKey of
+              Just key -> runDB $ do
+                userRecord <- get (toSqlKey key :: Key User)
+                case userRecord of
+                  Just user -> return $ toJSON user
+                  Nothing   -> sendResponseStatus error404 $ toJSON
+                    ("couldn't validate, user doesn't exist" :: T.Text)
+              Nothing -> sendResponseStatus error404
+                $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
 
 postLoginR :: HandlerFor App Value
 postLoginR = do
   body <- requireCheckJsonBody :: Handler Value
+  print body
   let loginInfo = fromJSON body :: Result LoginInfo
-  
-  return $ toJSON ("" :: T.Text)
+  case loginInfo of
+    Error s       ->  sendResponseStatus error500 $ toJSON s
+    Success loginDetails  ->  runDB $ do
+      userRecord <- getBy $ UniqueEmail $ loginEmail loginDetails
+      case userRecord of
+        Nothing -> sendResponseStatus error404 $ toJSON ("email does not exist, please register or try again" :: T.Text)
+        Just entity@(Entity _ dbUser) -> do
+          let verification = verifyPassword (encodeUtf8 . loginPassword $ loginDetails) (encodeUtf8 . userPassword $ dbUser)
+          if (not verification)
+          then sendResponseStatus error404 $ toJSON ("invalid password, please try again" :: T.Text)
+          else do
+            let cs = JWT.def { JWT.unregisteredClaims =
+                               Map.fromList [("id", String . tshow . fromSqlKey $ entityKey entity)]
+                             }
+            let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
+            return $ toJSON $ UserResponse jwt $ userName dbUser
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
@@ -94,7 +108,7 @@ postRegisterR = do
           { JWT.unregisteredClaims =
             Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
           }
-      let jwt              = JWT.encodeSigned JWT.HS256 mySecret cs
+      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
       return $ toJSON $ UserResponse jwt $ Model.User.name vu
 
 makeValidatedUser :: UnvalidatedUser -> ByteString -> User
