@@ -16,7 +16,6 @@ import           Data.Aeson
 import           Database.Persist.Sql           ( fromSqlKey
                                                 , toSqlKey
                                                 )
-import           Database.Persist
 import qualified Data.Text                     as T
 import           Data.Char
 import qualified Data.Map                      as Map
@@ -36,24 +35,21 @@ getHomeJSR = sendFile "text/javascript" "static/index.js"
 getQuoteR :: Text -> HandlerFor App Value
 getQuoteR = getQuote
 
-getInsertR :: Text -> HandlerFor App Value
-getInsertR stockSymbol = do
-  let Entity userId user = sampleUser
-  result <- runDB $ insertKey userId user
-  liftIO $ print result
-  return $ toJSON ("" :: String)
-
+error500 :: Status
 error500 = Status 500 "server error"
+
+error404 :: Status
+error404 = Status 404 "client not found"
 
 getUserR :: Text -> HandlerFor App Value
 getUserR jwt = do
   let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
   case parsedJWT of
-    Nothing       -> sendResponseStatus error500 $ toJSON ("invalid credentials" :: T.Text)
+    Nothing       -> sendResponseStatus error500 $ toJSON ("credentials in invalid format" :: T.Text)
     Just verified -> do
       let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
       case id of
-        Nothing -> return ""
+        Nothing -> sendResponseStatus error500 $ toJSON ("credentials missing information " :: T.Text)
         Just id -> do
           let parsedId = (fromJSON id) :: Result String
           case parsedId of
@@ -69,8 +65,8 @@ getUserR jwt = do
                       Just user -> do 
                         let response = toJSON userRecord
                         return response
-                      Nothing -> return ""
-                Nothing -> return ""
+                      Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, user doesn't exist" :: T.Text)
+                Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
@@ -83,7 +79,7 @@ postRegisterR = do
           =<< nameValidator
           =<< unvalidatedUser
   case validatedUser of
-    (Error   str) -> error str
+    (Error   str) -> sendResponseStatus error500 $ toJSON str
     (Success vu ) -> do
       hashedPassword <- liftIO
         $ (flip makePassword 10 . encodeUtf8 . password) vu
@@ -100,17 +96,6 @@ postRegisterR = do
       let jwt              = JWT.encodeSigned JWT.HS256 mySecret cs
       let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
       return userResponseJSON
-
-data UserResponse = UserResponse { token :: Text
-                                 , name :: Text
-                                 }
-  deriving (Generic)
-
-instance ToJSON UserResponse where
-  toJSON = genericToJSON defaultOptions
-
-instance FromJSON UserResponse where
-  parseJSON = genericParseJSON defaultOptions
 
 -- TODO: handle non-unique entry error (make more readable)
 
