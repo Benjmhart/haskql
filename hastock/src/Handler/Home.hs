@@ -47,12 +47,11 @@ getUserR jwt = do
   case parsedJWT of
     Nothing       -> sendResponseStatus error500 $ toJSON ("credentials in invalid format" :: T.Text)
     Just verified -> do
-      let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
-      case id of
+      let dbRecordKeyJSON = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified
+      case dbRecordKeyJSON of
         Nothing -> sendResponseStatus error500 $ toJSON ("credentials missing information " :: T.Text)
-        Just id -> do
-          let parsedId = (fromJSON id) :: Result String
-          case parsedId of
+        Just dbRecordKey -> do
+          case ((fromJSON dbRecordKey) :: Result String) of
             Error s -> do
               return $ toJSON s
             Success value -> do
@@ -63,15 +62,14 @@ getUserR jwt = do
                     userRecord <- get (toSqlKey key :: Key User)
                     case userRecord of
                       Just user -> do 
-                        let response = toJSON userRecord
-                        return response
+                        return $ toJSON user
                       Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, user doesn't exist" :: T.Text)
                 Nothing -> sendResponseStatus error404 $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
-  body <- requireJsonBody :: Handler Value
+  body <- requireCheckJsonBody :: Handler Value
   let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
   let validatedUser =
         passwordValidator
@@ -83,25 +81,20 @@ postRegisterR = do
     (Success vu ) -> do
       hashedPassword <- liftIO
         $ (flip makePassword 10 . encodeUtf8 . password) vu
-      print hashedPassword
-      let validatedUser' = (flip makeValidatedUser $ hashedPassword) vu
-      -- We Can't do inserts using insertKey because it breaks stuff
-      key <- runDB $ insert validatedUser'
-      --this successfully updates the DB
+      dbEntity <- runDB $ insert $ (flip makeValidatedUser $ hashedPassword) vu
       let
         cs = JWT.def
           { JWT.unregisteredClaims =
-            Map.fromList [("id", String . tshow . fromSqlKey $ key)]
+            Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
           }
       let jwt              = JWT.encodeSigned JWT.HS256 mySecret cs
-      let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
-      return userResponseJSON
+      return $ toJSON $ UserResponse jwt $ Model.User.name vu
 
 -- TODO: handle non-unique entry error (make more readable)
 
 makeValidatedUser :: UnvalidatedUser -> ByteString -> User
-makeValidatedUser (UnvalidatedUser name email _) hashedPassword =
-  User name email $ decodeUtf8 hashedPassword
+makeValidatedUser (UnvalidatedUser uvName uvEmail _) hashedPassword =
+  User uvName uvEmail $ decodeUtf8 hashedPassword
 
 weirdChars :: Char -> Bool
 weirdChars char = T.any (== char) ";/\\(){}[]"
