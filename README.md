@@ -13,7 +13,7 @@ curl -sSL https://get.haskellstack.org/ | sh
 sudo apt-get install postgresql python-psycopg2 libpq-dev
 ## or the equivalent in brew
 # install spago + purescript
-npm install -g spago purescript@v0.12.5
+npm install -g spago purescript parcel
 
 stack install yesod yesod-bin
 
