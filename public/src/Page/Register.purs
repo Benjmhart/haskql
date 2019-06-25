@@ -1,6 +1,6 @@
-module Page.Register (State, Query(..), component) where
+module Page.Register  where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($))
+import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($), (<<<))
 
 -- import Data.Array (concat)
 import Data.Maybe (Maybe(..))
@@ -32,6 +32,7 @@ import Atomic.Field (field_)
 import Atomic.LoadingDisplay (loadingDisplay)
 import Atomic.SubHeader (subHeader)
 import Atomic.ErrorDisplay (errorDisplay)
+import Data.Const (Const)
 import Page.Register.Styles (regForm, regLoginButtonWrapper)
 import Model.Urls(ApiUrl)
 import Model.UserPostBody(UserPostBody(..),validateUserPostBody)
@@ -47,13 +48,13 @@ type State =
   , result :: Either String (Maybe Token)
   }
 
-data Query a
-  = SetEmail String a
-  | SetName String a
-  | SetPassword String a
-  | SetVerifyPassword String a
-  | Submit a
-  | PreventDefault Event (Query a)
+data Action
+  = SetEmail String
+  | SetName String
+  | SetPassword String
+  | SetVerifyPassword String
+  | Submit
+  | PreventDefault Event (Action)
 
 component :: forall m r
     . MonadAff m
@@ -61,20 +62,21 @@ component :: forall m r
    => Log m
    => Register m
    => MonadAsk { apiUrl :: ApiUrl | r } m
-   => H.Component HH.HTML Query Unit Void m
+   => H.Component HH.HTML (Const Void) Unit Void m
 component =
-  H.component
+  H.mkComponent
     { initialState: const initialState
     , render
-    , eval
-    , receiver: const Nothing
+    , eval: H.mkEval  $ H.defaultEval 
+      { handleAction = handleAction
+      }
     }
   where
 
   initialState :: State
   initialState = { loading: false, name:"", email: "", password: "", verifyPassword: "", result: Right Nothing}
 
-  render :: State -> H.ComponentHTML Query
+  render :: State -> H.ComponentHTML Action () m
   render st =
     HH.div_
         [ subHeader "Register"
@@ -85,14 +87,14 @@ component =
                 [ fieldLabel_ [ HH.text "Username: " ]
                 , textField
                     [ HP.value st.name
-                    , HE.onValueInput (HE.input SetName)
+                    , HE.onValueInput (Just <<< SetName)
                     ]
                 ]
             , field_
                 [ fieldLabel_ [ HH.text "Email: " ]
                 , textField
                     [ HP.value st.email
-                    , HE.onValueInput (HE.input SetEmail)
+                    , HE.onValueInput (Just <<< SetEmail)
                     , HP.type_ HP.InputEmail
                     ]
                 ]
@@ -100,7 +102,7 @@ component =
                 [ fieldLabel_ [ HH.text "Password:" ]
                 , textField
                     [ HP.value st.password
-                    , HE.onValueInput (HE.input SetPassword)
+                    , HE.onValueInput (Just <<< SetPassword)
                     , HP.type_ HP.InputPassword
                     ]
                 ]
@@ -108,7 +110,7 @@ component =
                 [ fieldLabel_ [ HH.text "Verify Password:" ]
                 , textField
                     [ HP.value st.verifyPassword
-                    , HE.onValueInput (HE.input SetVerifyPassword)
+                    , HE.onValueInput (Just <<< SetVerifyPassword)
                     , HP.type_ HP.InputPassword
                     ]
                 ]
@@ -116,9 +118,10 @@ component =
                 [ HL.class_ regLoginButtonWrapper ] 
                 [ primaryButton
                     [ HP.disabled st.loading
-                    , HE.onClick $ HL.inputR \e ->
+                    , HE.onClick $ (\e -> Just $
                                     PreventDefault (toEvent e) $
-                                    H.action $ Submit
+                                    Submit
+                                   )
                     ]
                     [ HH.text "submit" ]
                 ]
@@ -131,21 +134,17 @@ component =
         ]
 
   --  TODO: pull out pure parts into their own functions
-  eval :: Query ~> H.ComponentDSL State Query Void m
-  eval = case _ of
-    SetEmail email next -> do
+  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction = case _ of
+    SetEmail email -> do
       H.modify_ (_ { email = email })
-      pure next
-    SetName name next -> do
+    SetName name -> do
       H.modify_ (_ { name = name})
-      pure next
-    SetPassword password next -> do
+    SetPassword password-> do
       H.modify_ (_ { password = password })
-      pure next
-    SetVerifyPassword verifyPassword next -> do
+    SetVerifyPassword verifyPassword-> do
       H.modify_ (_ { verifyPassword = verifyPassword })
-      pure next
-    Submit next -> do
+    Submit -> do
     --TODO - move  the API call here + parsing to a capability file
       email <- H.gets _.email
       name <- H.gets _.name
@@ -157,7 +156,6 @@ component =
         Left a ->  do
           log $ a
           H.modify_ (_ { result =  Left a })
-          pure next
         Right a -> do
             H.modify_ (_ { loading = true, result = (Right Nothing) })
             parsed <- register userPostBody
@@ -165,8 +163,7 @@ component =
             -- set user in reader
             -- set token  in localstorage
             -- navigate home
-            pure next
       -- TODO Move this out to a helper lib
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
-      eval q
+      handleAction q

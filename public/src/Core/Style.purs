@@ -23,10 +23,9 @@ mountStyles css = traverse_ (runUI (styleComponent css) unit) =<< HA.selectEleme
 
 styleComponent :: CSS -> forall m. H.Component HH.HTML (Const Void) Unit Void m
 styleComponent css =
-  H.component
+  H.mkComponent
     { initialState: const unit
     , render: const $ HCSS.stylesheet $ css
-    , eval: absurd <<< unwrap
-    , receiver: const Nothing
+    , eval: H.mkEval H.defaultEval
     }
          

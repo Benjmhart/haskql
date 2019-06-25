@@ -14,5 +14,5 @@ import Model.Token(Token(..))
 class Monad m <= Register m where
   register :: UserPostBody -> m (Either String (Maybe Token))
 
-instance registerHalogenM :: Register m => Register (HalogenM s f g p o m) where
+instance registerHalogenM :: Register m => Register (HalogenM st act slots msg m) where
   register = lift <<< register

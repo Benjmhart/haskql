@@ -21,6 +21,7 @@ import Core.Router as Router
 import Core.Style (mountStyles)
 
 
+
 -- | Run the app.
 main :: String -> String -> String -> Effect Unit
 main logLevel apiUrl baseUrl = HA.runHalogenAff do
@@ -50,6 +51,6 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
   void $ H.liftEffect $ navListen \new -> do
     case new of
       Nothing -> log "invalid route"
-      Just a -> launchAff_ $ halogenIO.query $ H.action $ Router.Navigate a
+      Just a -> launchAff_ $ halogenIO.query $ H.tell $ Router.Navigate a
 
   pure unit

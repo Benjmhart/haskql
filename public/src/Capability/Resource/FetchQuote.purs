@@ -14,5 +14,5 @@ import Model.StockSymbol
 class Monad m <= FetchQuote m where
   fetchQuote :: StockSymbol -> m (Either String (Maybe Quote))
 
-instance fetchQuoteHalogenM :: FetchQuote m => FetchQuote (HalogenM s f g p o m) where
+instance fetchQuoteHalogenM :: FetchQuote m => FetchQuote (HalogenM st act slots msg m) where
   fetchQuote = lift <<< fetchQuote

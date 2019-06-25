@@ -25,6 +25,6 @@ class Monad m <= Log m where
   log :: forall a. Show a => a -> m Unit
 
 -- | This instance lets us avoid having to use `lift` when we use these functions in a component.
-instance logMessagesHalogenM :: Log m => Log (HalogenM s f g p o m) where
+instance logMessagesHalogenM :: Log m => Log (HalogenM st act slots msg m) where
   log = lift <<< log
 

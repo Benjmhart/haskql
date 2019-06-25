@@ -1,9 +1,10 @@
-module Page.SymbolSearch ( State, Query(..), component) where
+module Page.SymbolSearch where
 
 import Prelude
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Newtype (unwrap)
+import Data.Const (Const)
 import Foreign(ForeignError)
 import Data.List.NonEmpty (NonEmptyList, singleton)
 import Effect.Aff.Class (class MonadAff)
@@ -43,23 +44,24 @@ type State =
   , result :: Either String (Maybe Quote)
   }
 
-data Query a
-  = SetSymbol String a
-  | MakeRequest a
-  | PreventDefault Event (Query a)
+data Action
+  = SetSymbol String
+  | MakeRequest
+  | PreventDefault Event (Action)
 
 
 component :: forall m r
     . MonadAff m
    => MonadAsk { apiUrl :: ApiUrl | r } m
    => FetchQuote m
-   => H.Component HH.HTML Query Unit Void m
+   => H.Component HH.HTML (Const Void) Unit Void m
 component =
-  H.component
+  H.mkComponent
     { initialState: const initialState
     , render
-    , eval
-    , receiver: const Nothing
+    , eval: H.mkEval  $ H.defaultEval 
+      { handleAction = handleAction
+      }
     }
   where
 
@@ -67,7 +69,7 @@ component =
   initialState = { loading: false, symbol: StockSymbol "", result: Right Nothing}
 
   -- TODO - break this up into smaller components
-  render :: State -> H.ComponentHTML Query
+  render :: State -> H.ComponentHTML Action () m
   render st =
     HH.div_
       [ subHeader "Lookup Stock Quote" 
@@ -78,16 +80,17 @@ component =
                 [ HH.text "Stock Symbol: " ]
               , textField
                   [ HP.value $ unwrap st.symbol
-                  , HE.onValueInput (HE.input SetSymbol)
+                  , HE.onValueInput (Just <<< SetSymbol)
                   ]
               ]
           , HH.div
               [ HL.class_ ssFetchButtonWrapper ]
               [ primaryButton
                   [ HP.disabled st.loading
-                  , HE.onClick $ HL.inputR \e ->
+                  , HE.onClick $ (\e -> Just $
                                   PreventDefault (toEvent e) $
-                                  H.action $ MakeRequest
+                                  MakeRequest
+                                 )
                   ]
                   [ HH.text "Fetch info" ]
               ]
@@ -98,15 +101,14 @@ component =
 
 
   --  TODO: pull out pure parts into their own functions
-  eval :: Query ~> H.ComponentDSL State Query Void m
-  eval = case _ of
+  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction = case _ of
   -- TODO: validate stock symbol and make a symbol type
-    SetSymbol symbol next -> do
+    SetSymbol symbol -> do
       H.modify_ (_ { symbol = StockSymbol symbol
                    , result = Right Nothing
                    })
-      pure next
-    MakeRequest next -> do
+    MakeRequest -> do
     --TODO - move  the API call here + parsing to a monad capability file
       symbol <- H.gets _.symbol
       apiUrl <- asks _.apiUrl
@@ -114,13 +116,11 @@ component =
         (StockSymbol "") -> do
           H.liftEffect $ log $ "empty"
           H.modify_ (_ { result =  Left "You must enter a stock symbol" })
-          pure next
         _                -> do 
           H.modify_ (_ { loading = true, result = (Right Nothing) })
           parsed <- fetchQuote symbol
           H.modify_ (_ { loading = false, result = parsed })
-          pure next
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
-      eval q
+      handleAction q
 

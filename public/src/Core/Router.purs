@@ -1,4 +1,4 @@
-module Core.Router (Input, State, Query(..), component) where
+module Core.Router where
 
 import Prelude
 
@@ -12,12 +12,10 @@ import Page.SymbolSearch as Home
 import Page.Register as Register
 import Core.Header as Header
 import Control.Monad.Reader (class MonadAsk)
-import Data.Either.Nested (Either3)
-import Data.Functor.Coproduct.Nested (Coproduct3)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Symbol (SProxy(..))
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
-import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
 import Model.Urls (ApiUrl)
@@ -40,17 +38,12 @@ type Input =
 -- 
 -- For a detailed explanation of what's going on here, please see this issue:
 -- https://github.com/thomashoneyman/purescript-halogen-realworld/issues/20
-type ChildQuery = Coproduct3
-  Header.Query
-  Home.Query
-  -- Login.Query
-  Register.Query
-  -- Watched.Query
 
-type ChildSlot = Either3
-  Unit
-  Unit
-  Unit
+type ChildSlots = 
+  ( header :: HL.OpaqueChildSlot Unit
+  , home :: HL.OpaqueChildSlot Unit
+  , register :: HL.OpaqueChildSlot Unit
+)
 
 component
   :: forall m r
@@ -66,35 +59,35 @@ component
   -- => ManageArticle m
   -- => ManageComment m
   -- => ManageTag m
-  => H.Component HH.HTML Query Input Void m
+  => H.Component HH.HTML Query (Maybe Route) Void m
 component =
-  H.parentComponent
+  H.mkComponent
     { initialState: \initialRoute -> { route: fromMaybe Home initialRoute } 
     , render
-    , eval
-    , receiver: const Nothing
+    , eval: H.mkEval $ H.defaultEval 
+      { handleQuery = handleQuery
+      }
     }
 
   where 
 
-  eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void m
-  eval (Navigate dest a) = do
+  handleQuery :: forall a. Query a -> H.HalogenM State Void ChildSlots Void m (Maybe a)
+  handleQuery (Navigate dest a) = do
     { route } <- H.get 
-    when (route /= dest) do
-      H.modify_ _ { route = dest }
-    pure a
+    H.modify_ _ { route = dest }
+    pure (Just a)
 
-  render :: State -> H.ParentHTML Query ChildQuery ChildSlot m
+  render :: State -> H.ComponentHTML Void ChildSlots m
   render { route } = 
     HH.div [ HL.class_ coreLayout] [
       HH.div [ HL.class_ bodyContent ]
-      [ HH.slot' CP.cp1 unit Header.component route absurd
+      [ HH.slot (SProxy :: _ "header") unit Header.component route absurd
       , case route of
           Home -> 
-            HH.slot' CP.cp2 unit Home.component unit absurd
+            HH.slot (SProxy :: _ "home") unit Home.component unit absurd
           -- Login -> 
           --   HH.slot' CP.cp2 unit Login.component unit absurd
           Register -> 
-            HH.slot' CP.cp3 unit Register.component unit absurd
+            HH.slot (SProxy :: _ "register") unit Register.component unit absurd
       ]
     ]

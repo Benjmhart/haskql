@@ -21,6 +21,7 @@ You can edit this file as you like.
     , "halogen"
     , "halogen-css"
     , "lists"
+    , "maybe"
     , "node-process"
     , "now"
     , "optparse"
