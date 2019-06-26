@@ -39,31 +39,52 @@ error500 = Status 500 "server error"
 error404 :: Status
 error404 = Status 404 "client not found"
 
+getIdFromJWT :: Text -> Maybe Value
+getIdFromJWT jwt = do 
+  parsedJWT <- JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
+  dbRecordKeyJSON <- lookup "id" . JWT.unregisteredClaims $ JWT.claims parsedJWT
+  return dbRecordKeyJSON
+
+-- getUserByID :: String -> HandlerFor App (Maybe User)
+-- getUserByID id = do
+--   -- parsedId :: Maybe Int64
+--   parsedId <- readIntegral id
+--   userEntity <- runDB $ do
+--     get (toSqlKey parsedId :: Key User)
+--   userEntity
+
 getUserR :: Text -> HandlerFor App Value
-getUserR jwt = do
-  let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
-  case parsedJWT of
-    Nothing -> sendResponseStatus error500
-      $ toJSON ("credentials in invalid format" :: T.Text)
-    Just verified -> do
-      let dbRecordKeyJSON =
-            lookup "id" . JWT.unregisteredClaims $ JWT.claims verified
-      case dbRecordKeyJSON of
-        Nothing -> sendResponseStatus error500
-          $ toJSON ("credentials missing information " :: T.Text)
+getUserR jwt = 
+      case getIdFromJWT jwt of
+        Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
         Just dbRecordKey -> case (fromJSON dbRecordKey :: Result String) of
           Error   s     -> sendResponseStatus error500 $ toJSON s
-          Success value -> do
-            let maybeKey = readIntegral value :: Maybe Int64
-            case maybeKey of
-              Just key -> runDB $ do
-                userRecord <- get (toSqlKey key :: Key User)
-                case userRecord of
+          Success value -> case (readIntegral value) of
+              Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
+              Just parsedId -> do
+                userEntity <- runDB $ do
+                  get (toSqlKey parsedId :: Key User)
+                case userEntity of
+                  Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
                   Just user -> return $ toJSON user
-                  Nothing   -> sendResponseStatus error404 $ toJSON
-                    ("couldn't validate, user doesn't exist" :: T.Text)
-              Nothing -> sendResponseStatus error404
-                $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
+            -- \user -> case user of
+            --   Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
+            --   Just user -> return $ toJSON user
+            -- <$> getUserByID value
+            
+            -- case getUserByID value of
+            -- Nothing -> sendResponseStatus error404
+            --     $ toJSON ("invalid credentials, please try logging in" :: T.Text)
+            -- Just user -> return . toJSON $ user
+            -- case (readIntegral value :: Maybe Int64) of
+            --   Just key -> runDB $ do
+            --     userRecord <- get (toSqlKey key :: Key User)
+            --     case userRecord of
+            --       Just user -> return $ toJSON user
+            --       Nothing   -> sendResponseStatus error404 $ toJSON
+            --         ("couldn't validate, user doesn't exist" :: T.Text)
+            --   Nothing -> sendResponseStatus error404
+            --     $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
 
 postLoginR :: HandlerFor App Value
 postLoginR = do
