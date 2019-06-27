@@ -39,101 +39,78 @@ error500 = Status 500 "server error"
 error404 :: Status
 error404 = Status 404 "client not found"
 
-getIdFromJWT :: Text -> Maybe Value
-getIdFromJWT jwt = do 
-  parsedJWT <- JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
-  dbRecordKeyJSON <- lookup "id" . JWT.unregisteredClaims $ JWT.claims parsedJWT
-  return dbRecordKeyJSON
+resultToMaybe :: Result a -> Maybe a
+resultToMaybe (Error _) = Nothing
+resultToMaybe (Success value) = Just value
 
--- getUserByID :: String -> HandlerFor App (Maybe User)
--- getUserByID id = do
---   -- parsedId :: Maybe Int64
---   parsedId <- readIntegral id
---   userEntity <- runDB $ do
---     get (toSqlKey parsedId :: Key User)
---   userEntity
+makeJWTClaimsSet :: Key User -> JWT.JWTClaimsSet
+makeJWTClaimsSet dbEntity = JWT.def
+          { JWT.unregisteredClaims =
+            Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
+          }
+
+getIdFromJWT :: Text -> Maybe Int64
+getIdFromJWT jwt = do 
+  parsedJWT <- JWT.decodeAndVerifySignature mySecret jwt
+  dbRecordKeyJSON <- lookup "id" . JWT.unregisteredClaims $ JWT.claims parsedJWT
+  dbRecordKey <- resultToMaybe . fromJSON $ dbRecordKeyJSON
+  readIntegral dbRecordKey
 
 getUserR :: Text -> HandlerFor App Value
 getUserR jwt = 
       case getIdFromJWT jwt of
         Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
-        Just dbRecordKey -> case (fromJSON dbRecordKey :: Result String) of
-          Error   s     -> sendResponseStatus error500 $ toJSON s
-          Success value -> case (readIntegral value) of
+        Just parsedId -> do
+          userEntity <- runDB $ do
+            get (toSqlKey parsedId :: Key User)
+          case userEntity of
               Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
-              Just parsedId -> do
-                userEntity <- runDB $ do
-                  get (toSqlKey parsedId :: Key User)
-                case userEntity of
-                  Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
-                  Just user -> return $ toJSON user
-            -- \user -> case user of
-            --   Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
-            --   Just user -> return $ toJSON user
-            -- <$> getUserByID value
-            
-            -- case getUserByID value of
-            -- Nothing -> sendResponseStatus error404
-            --     $ toJSON ("invalid credentials, please try logging in" :: T.Text)
-            -- Just user -> return . toJSON $ user
-            -- case (readIntegral value :: Maybe Int64) of
-            --   Just key -> runDB $ do
-            --     userRecord <- get (toSqlKey key :: Key User)
-            --     case userRecord of
-            --       Just user -> return $ toJSON user
-            --       Nothing   -> sendResponseStatus error404 $ toJSON
-            --         ("couldn't validate, user doesn't exist" :: T.Text)
-            --   Nothing -> sendResponseStatus error404
-            --     $ toJSON ("couldn't validate, invalid credentials" :: T.Text)
+              Just user -> return $ toJSON user
+
+
 
 postLoginR :: HandlerFor App Value
 postLoginR = do
   body <- requireCheckJsonBody :: Handler Value
-  print body
-  let loginInfo = fromJSON body :: Result LoginInfo
-  case loginInfo of
-    Error s       ->  sendResponseStatus error500 $ toJSON s
+  case (fromJSON body :: Result LoginInfo) of
+    Error s               ->  sendResponseStatus error500 $ toJSON s
     Success loginDetails  ->  runDB $ do
       userRecord <- getBy $ UniqueEmail $ loginEmail loginDetails
       case userRecord of
         Nothing -> sendResponseStatus error404 $ toJSON ("email does not exist, please register or try again" :: T.Text)
-        Just entity@(Entity _ dbUser) -> do
-          let verification = verifyPassword (encodeUtf8 . loginPassword $ loginDetails) (encodeUtf8 . userPassword $ dbUser)
-          if (not verification)
+        Just entity@(Entity _ dbUser) -> if (invalidPassword)
           then sendResponseStatus error404 $ toJSON ("invalid password, please try again" :: T.Text)
-          else do
-            let cs = JWT.def { JWT.unregisteredClaims =
-                               Map.fromList [("id", String . tshow . fromSqlKey $ entityKey entity)]
-                             }
-            let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
-            return $ toJSON $ UserResponse jwt $ userName dbUser
+          else return $ toJSON $ UserResponse jwt $ userName dbUser
+            where
+              invalidPassword = not $ verifyPassword (encodeUtf8 . loginPassword $ loginDetails) (encodeUtf8 . userPassword $ dbUser)
+              -- cs = JWT.def { JWT.unregisteredClaims =
+              --   Map.fromList [("id", String . tshow . fromSqlKey $ )]
+              -- }
+              jwt = JWT.encodeSigned JWT.HS256 mySecret $ makeJWTClaimsSet $ entityKey entity
+
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
   body <- requireCheckJsonBody :: Handler Value
-  let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
-  let validatedUser =
-        passwordValidator
-          =<< emailValidator
-          =<< nameValidator
-          =<< unvalidatedUser
+  let unvalidatedUser  =  fromJSON body :: Result UnvalidatedUser
+  let validatedUser    =  passwordValidator
+                      =<< emailValidator
+                      =<< nameValidator
+                      =<< unvalidatedUser
   case validatedUser of
     (Error   str) -> sendResponseStatus error500 $ toJSON str
     (Success vu ) -> do
       hashedPassword <- liftIO
         $ (flip makePassword 10 . encodeUtf8 . password) vu
-      dbEntity <- runDB $ insert $ (flip makeValidatedUser $ hashedPassword) vu
-      let
-        cs = JWT.def
-          { JWT.unregisteredClaims =
-            Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
-          }
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
-      return $ toJSON $ UserResponse jwt $ Model.User.name vu
+      dbEntity <- runDB $ insert $ makeValidatedUser hashedPassword vu
+      return $ toJSON 
+             $ UserResponse 
+                (JWT.encodeSigned JWT.HS256 mySecret (makeJWTClaimsSet dbEntity))
+             $ Model.User.name vu
 
-makeValidatedUser :: UnvalidatedUser -> ByteString -> User
-makeValidatedUser (UnvalidatedUser uvName uvEmail _) hashedPassword =
+makeValidatedUser :: ByteString -> UnvalidatedUser -> User
+makeValidatedUser hashedPassword (UnvalidatedUser uvName uvEmail _) =
   User uvName uvEmail $ decodeUtf8 hashedPassword
 
 weirdChars :: Char -> Bool
