@@ -108,6 +108,7 @@ postRegisterR = do
                     (runDB $ insert $ makeValidatedUser hashedPassword vu)
                     (\e -> do
                         case e of 
+                          -- TODO: match error to determine if it's unique email or unique username error
                           (SqlError _ _ msg _ _) -> sendResponseStatus error500 $ toJSON $ ("email already registered" :: Text)
                           _ -> sendResponseStatus error500 $ toJSON $ show e)
       return $ toJSON 

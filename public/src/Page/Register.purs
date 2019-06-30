@@ -158,9 +158,10 @@ component =
           log $ a
           H.modify_ (_ { result =  Left a })
         Right a -> do
-            H.modify_ (_ { loading = true, result = (Right Nothing) })
-            parsed <- register userPostBody
-            H.modify_ (_ { loading = false, result = parsed })
+          H.modify_ (_ { loading = true, result = (Right Nothing) })
+          parsed <- register userPostBody
+          H.modify_ (_ { loading = false, result = parsed })
+          
             -- set user in reader
             -- set token  in localstorage
             -- navigate home

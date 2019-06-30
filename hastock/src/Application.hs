@@ -53,6 +53,7 @@ import Handler.Common
 import Handler.Home
 import Database.Persist.Postgresql (ConnectionString)
 import Model.User
+import Network.HTTP.Types.Method (methodGet, methodPost, methodPut, methodDelete)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -108,9 +109,8 @@ makeApplication foundation = do
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
     return $ makeSpaRoutes . corsMiddleware . logWare $ defaultMiddlewaresNoLogging appPlain
-    
     where 
-      corsMiddleware = cors . const . Just $ simpleCorsResourcePolicy { corsRequestHeaders = simpleHeaders, corsOrigins = Nothing }
+      corsMiddleware = cors . const . Just $ simpleCorsResourcePolicy { corsRequestHeaders = simpleHeaders, corsOrigins = Nothing, corsMethods = [methodGet, methodPost, methodPut, methodDelete] }
 
 -- TODO: possibly publish this as a helper middleware
 makeSpaRoutes :: Middleware

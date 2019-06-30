@@ -132,8 +132,9 @@ instance registerAppM :: Register AppM where
         status = (networkErrorString $ _.status <$> response) :: Either String (AXSC.StatusCode)
         rb = (join $ responseErrorToString <$> nested) :: Either String String
         parsed = safeParseJSON =<< rb
+      log rb
       case status of
-        (Left _) -> pure $ Left "exception"
+        (Left _) -> pure $ Left "Network Error"
         (Right (AXSC.StatusCode 200)) -> pure parsed
         (Right (AXSC.StatusCode 500)) -> case rb of
           (Left e) -> pure $ Left e
