@@ -59,6 +59,18 @@ curl --header "Content-Type: application/json" \
   http://localhost:3000/api/v1/register
 ```
 
+<<<<<<< HEAD
+=======
+#### LoginR POST
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"loginEmail":"jonathan_lorimer@mac.com","loginPassword":"Hello123%"}' \
+  http://localhost:3000/api/v1/login
+```
+
+>>>>>>> 5b00f4abe363f05605815307af21a35a6c95b07a
 #### UserR GET
 
 ```

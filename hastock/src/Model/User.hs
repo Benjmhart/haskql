@@ -30,6 +30,18 @@ instance ToJSON UnvalidatedUser where
 instance FromJSON UnvalidatedUser where
   parseJSON = genericParseJSON defaultOptions
 
+data LoginInfo = LoginInfo { loginEmail    :: Text
+                           , loginPassword :: Text 
+                           }
+                           deriving (Generic, Show)
+
+
+instance ToJSON LoginInfo where
+  toJSON = genericToJSON defaultOptions
+
+instance FromJSON LoginInfo where
+  parseJSON = genericParseJSON defaultOptions
+
 PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persistLowerCase|
   User sql=users
     name Text
@@ -39,9 +51,24 @@ PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persi
     deriving Show
 |]
 
-sampleUser :: Entity User
-sampleUser = Entity (toSqlKey 1) $ User
-    { userName = "admin"
-    , userEmail = "admin@test.com"
-    , userPassword = "password1"
-    }
+instance ToJSON User where
+  toJSON (User userName userEmail _) = object ["username" .= userName, "email" .= userEmail]
+
+
+data UserResponse = UserResponse { userResponseToken :: Text
+                                 , userResponseName :: Text
+                                 }
+                                 deriving (Generic)
+
+instance ToJSON UserResponse where
+  toJSON = genericToJSON defaultOptions
+
+instance FromJSON UserResponse where
+  parseJSON = genericParseJSON defaultOptions
+
+-- sampleUser :: Entity User
+-- sampleUser = Entity (toSqlKey 1) $ User
+--     { userName = "admin"
+--     , userEmail = "admin@test.com"
+--     , userPassword = "password1"
+--     }
