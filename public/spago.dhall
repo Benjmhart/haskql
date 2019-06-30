@@ -30,6 +30,7 @@ You can edit this file as you like.
     , "routing-duplex"
     , "simple-json"
     , "slug"
+    , "stringutils"
     ]
 , packages =
     ./packages.dhall

@@ -1,5 +1,5 @@
 name: hastock
-version: "0.0.0"
+version: '0.0.0'
 
 dependencies:
   # Due to a bug in GHC 8.0.1, we block its usage
@@ -13,6 +13,7 @@ dependencies:
   - persistent >= 0.3.1
   - persistent-template
   - persistent-postgresql
+  - postgresql-simple
   - data-serializer
   - http-types
   - jwt == 0.7.2

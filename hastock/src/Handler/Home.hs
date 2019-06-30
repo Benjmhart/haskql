@@ -19,6 +19,7 @@ import           Data.Char
 import qualified Data.Map                      as Map
 import           Yesod.Auth.Util.PasswordStore  ( makePassword, verifyPassword )
 import qualified Web.JWT                       as JWT
+import           Database.PostgreSQL.Simple (SqlError(..))
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -103,7 +104,12 @@ postRegisterR = do
     (Success vu ) -> do
       hashedPassword <- liftIO
         $ (flip makePassword 10 . encodeUtf8 . password) vu
-      dbEntity <- runDB $ insert $ makeValidatedUser hashedPassword vu
+      dbEntity <- catch
+                    (runDB $ insert $ makeValidatedUser hashedPassword vu)
+                    (\e -> do
+                        case e of 
+                          (SqlError _ _ msg _ _) -> sendResponseStatus error500 $ toJSON $ ("email already registered" :: Text)
+                          _ -> sendResponseStatus error500 $ toJSON $ show e)
       return $ toJSON 
              $ UserResponse 
                 (JWT.encodeSigned JWT.HS256 (JWT.secret $ jwtSecret $ appSettings app) (makeJWTClaimsSet dbEntity))

@@ -1,10 +1,11 @@
 module Page.Register  where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($), (<<<))
+import Prelude
 
 -- import Data.Array (concat)
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.String.Utils as SU
 -- import Data.Either (hush)
 import Effect.Aff.Class (class MonadAff)
 -- import Effect.Console (log)
@@ -125,12 +126,12 @@ component =
                     ]
                     [ HH.text "submit" ]
                 ]
-            , loadingDisplay st.loading
-            , HH.div_ $
-                case st.result of
-                  Right _ -> []
-                  Left err -> [ errorDisplay err ]
             ]
+        , loadingDisplay st.loading
+        , HH.div_ $
+            case st.result of
+              Right _ -> []
+              Left err -> [ errorDisplay ("Error: " <> SU.filter (\c -> c /= "\"" ) err) ]
         ]
 
   --  TODO: pull out pure parts into their own functions
@@ -167,3 +168,4 @@ component =
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
       handleAction q
+

@@ -94,7 +94,7 @@ instance FromJSON AppSettings where
         databaseUser              <-  fromString <$> o .: "dbUser"
         databaseName              <-  fromString <$> o .: "dbName"
         databasePw                <-  fromString <$> o .: "dbPassword"
-
+        jwtSecret                 <-  fromString <$> o .: "jwtSecret"
         return AppSettings {..}
 
 -- | Settings for 'widgetFile', such as which template languages to support and

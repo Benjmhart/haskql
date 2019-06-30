@@ -30,6 +30,7 @@ import Affjax as AX
 import Affjax.ResponseFormat as AXRF
 import Affjax.RequestBody as AXRB
 import Affjax.RequestHeader as AXRH
+import Affjax.StatusCode as AXSC
 import Data.Argonaut.Core as J
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.MediaType as MT
@@ -128,10 +129,19 @@ instance registerAppM :: Register AppM where
       response <- H.liftAff $ try $ AX.post AXRF.string (reqUrl) requestBody
       let 
         nested = (networkErrorString $ _.body <$> response) :: Either String (Either AXRF.ResponseFormatError String)
+        status = (networkErrorString $ _.status <$> response) :: Either String (AXSC.StatusCode)
         rb = (join $ responseErrorToString <$> nested) :: Either String String
-        parsed = safeParseJSON=<< rb
-      log $ "response" <> show rb
-      log $ "parsed" <> show parsed
-      pure parsed
+        parsed = safeParseJSON =<< rb
+      case status of
+        (Left _) -> pure $ Left "exception"
+        (Right (AXSC.StatusCode 200)) -> pure parsed
+        (Right (AXSC.StatusCode 500)) -> case rb of
+          (Left e) -> pure $ Left e
+          (Right r) -> pure $ Left r
+        (Right _) -> pure $ Left "unhandled exception"
       where 
         safeParseJSON = lmap (\_ -> "Invalid Registration") <<< JSON.readJSON
+
+eitherSwitch :: forall a. Either a a -> Either a a
+eitherSwitch (Right a) = Left a
+eitherSwitch (Left a) = Left a
