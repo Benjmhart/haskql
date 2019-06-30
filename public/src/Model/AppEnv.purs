@@ -44,6 +44,7 @@ import Halogen.Router (pushRoute)
 import Model.Urls (ApiUrl, BaseUrl)
 import Model.UserPostBody(UserPostBody(..))
 import Model.Token(Token(..))
+import Data.HTTP.Method (Method(..))
 
 
 type AppEnv =  
@@ -92,6 +93,13 @@ instance navigateAppM :: Navigate AppM where
     liftEffect <<< Ref.write Nothing =<< asks _.currentUser
     liftEffect Request.removeToken 
     navigate Route.Home
+
+get url = AX.request (AX.defaultRequest 
+                       { url = url
+                       , method = Left GET 
+                       , responseFormat = AXRF.string
+                       , headers = AX.defaultRequest.headers <> [ (AXRH.RequestHeader "Access-Control-Allow-Origin" "*") ]            }
+                     )
 
 instance fetchQuoteAppM :: FetchQuote AppM where
   fetchQuote symbol = do
