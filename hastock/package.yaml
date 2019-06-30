@@ -15,7 +15,7 @@ dependencies:
   - persistent-postgresql
   - data-serializer
   - http-types
-  - jwt ==0.7.2
+  - jwt == 0.7.2
   - classy-prelude
   - classy-prelude-conduit
   - classy-prelude-yesod

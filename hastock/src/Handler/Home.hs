@@ -1,8 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude      #-}
 {-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE DataKinds              #-}
 
@@ -10,17 +8,17 @@ module Handler.Home where
 
 import           Import
 
-import            Handler.Quote.GetQuote         ( getQuote )
-import            Model.User
-import            Model.User                     ( UnvalidatedUser(..) )
-import            Data.Aeson                     ( fromJSON )
-import            Data.Aeson
-import            Database.Persist.Sql(fromSqlKey)
-import qualified  Data.Text                     as T
-import            Data.Char
-import qualified  Data.Map                      as Map
-import            Yesod.Auth.Util.PasswordStore  ( makePassword )
-import qualified  Web.JWT as JWT
+import           Handler.Quote.GetQuote         ( getQuote )
+import           Model.User
+import           Data.Aeson
+import           Database.Persist.Sql           ( fromSqlKey
+                                                , toSqlKey
+                                                )
+import qualified Data.Text                     as T
+import           Data.Char
+import qualified Data.Map                      as Map
+import           Yesod.Auth.Util.PasswordStore  ( makePassword, verifyPassword )
+import qualified Web.JWT                       as JWT
 
 mySecret :: JWT.Secret
 mySecret = JWT.secret "hello"
@@ -35,70 +33,85 @@ getHomeJSR = sendFile "text/javascript" "static/index.js"
 getQuoteR :: Text -> HandlerFor App Value
 getQuoteR = getQuote
 
-getInsertR :: Text -> HandlerFor App Value
-getInsertR stockSymbol = do
-  let Entity userId user = sampleUser
-  result <- runDB $ insertKey userId user
-  liftIO $ print result
-  return $ toJSON ("" :: String)
+error500 :: Status
+error500 = Status 500 "server error"
 
-getUserR :: Text -> HandlerFor App ()
-getUserR jwt = do
-  let parsedJWT = JWT.decodeAndVerifySignature (JWT.secret "hello") jwt
-  case parsedJWT of
-    Nothing -> return ()
-    Just (verified) -> do
-        let id = lookup "id" . JWT.unregisteredClaims $ JWT.claims verified --TODO: Add proper error message
-        case id of
-          Nothing -> return ()
-          Just (id) -> do
-            let parsedId = (fromJSON id) :: Result String
-            print parsedId
-            return ()
-        return ()
-    _ -> return ()
+error404 :: Status
+error404 = Status 404 "client not found"
+
+resultToMaybe :: Result a -> Maybe a
+resultToMaybe (Error _) = Nothing
+resultToMaybe (Success value) = Just value
+
+makeJWTClaimsSet :: Key User -> JWT.JWTClaimsSet
+makeJWTClaimsSet dbEntity = JWT.def
+          { JWT.unregisteredClaims =
+            Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
+          }
+
+getIdFromJWT :: Text -> Maybe Int64
+getIdFromJWT jwt = do 
+  parsedJWT <- JWT.decodeAndVerifySignature mySecret jwt
+  dbRecordKeyJSON <- lookup "id" . JWT.unregisteredClaims $ JWT.claims parsedJWT
+  dbRecordKey <- resultToMaybe . fromJSON $ dbRecordKeyJSON
+  readIntegral dbRecordKey
+
+getUserR :: Text -> HandlerFor App Value
+getUserR jwt = 
+      case getIdFromJWT jwt of
+        Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
+        Just parsedId -> do
+          userEntity <- runDB $ do
+            get (toSqlKey parsedId :: Key User)
+          case userEntity of
+              Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
+              Just user -> return $ toJSON user
+
+
+
+postLoginR :: HandlerFor App Value
+postLoginR = do
+  body <- requireCheckJsonBody :: Handler Value
+  case (fromJSON body :: Result LoginInfo) of
+    Error s               ->  sendResponseStatus error500 $ toJSON s
+    Success loginDetails  ->  runDB $ do
+      userRecord <- getBy $ UniqueEmail $ loginEmail loginDetails
+      case userRecord of
+        Nothing -> sendResponseStatus error404 $ toJSON ("email does not exist, please register or try again" :: T.Text)
+        Just entity@(Entity _ dbUser) -> if (invalidPassword)
+          then sendResponseStatus error404 $ toJSON ("invalid password, please try again" :: T.Text)
+          else return $ toJSON $ UserResponse jwt $ userName dbUser
+            where
+              invalidPassword = not $ verifyPassword (encodeUtf8 . loginPassword $ loginDetails) (encodeUtf8 . userPassword $ dbUser)
+              -- cs = JWT.def { JWT.unregisteredClaims =
+              --   Map.fromList [("id", String . tshow . fromSqlKey $ )]
+              -- }
+              jwt = JWT.encodeSigned JWT.HS256 mySecret $ makeJWTClaimsSet $ entityKey entity
+
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
-  body <- requireJsonBody :: Handler Value
-  let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
-  let validatedUser =
-        passwordValidator
-          =<< emailValidator
-          =<< nameValidator
-          =<< unvalidatedUser
+  body <- requireCheckJsonBody :: Handler Value
+  let unvalidatedUser  =  fromJSON body :: Result UnvalidatedUser
+  let validatedUser    =  passwordValidator
+                      =<< emailValidator
+                      =<< nameValidator
+                      =<< unvalidatedUser
   case validatedUser of
-    (Error str) -> error str
-    (Success vu) -> do
-      hashedPassword <-
-        liftIO $ (flip makePassword 10 . encodeUtf8 . password) vu
-      print hashedPassword
-      let validatedUser' = (flip makeValidatedUser $ hashedPassword) vu
-      -- We Can't do inserts using insertKey because it breaks stuff
-      key <- runDB $ insert validatedUser'
-      --this successfully updates the DB
-      let cs = JWT.def { JWT.unregisteredClaims = Map.fromList [("id", String . tshow . fromSqlKey $ key)] }
-      let jwt = JWT.encodeSigned JWT.HS256 mySecret cs
-      let userResponseJSON = toJSON $ UserResponse jwt $ Model.User.name vu
-      return userResponseJSON
+    (Error   str) -> sendResponseStatus error500 $ toJSON str
+    (Success vu ) -> do
+      hashedPassword <- liftIO
+        $ (flip makePassword 10 . encodeUtf8 . password) vu
+      dbEntity <- runDB $ insert $ makeValidatedUser hashedPassword vu
+      return $ toJSON 
+             $ UserResponse 
+                (JWT.encodeSigned JWT.HS256 mySecret (makeJWTClaimsSet dbEntity))
+             $ Model.User.name vu
 
-data UserResponse = UserResponse { token :: Text
-                                 , name :: Text
-                                 }
-  deriving (Generic)
-
-instance ToJSON UserResponse where
-  toJSON = genericToJSON defaultOptions
-
-instance FromJSON UserResponse where
-  parseJSON = genericParseJSON defaultOptions
-
--- TODO: handle non-unique entry error (make more readable)
-
-makeValidatedUser :: UnvalidatedUser -> ByteString -> User
-makeValidatedUser (UnvalidatedUser name email _) hashedPassword =
-  User name email $ decodeUtf8 hashedPassword
+makeValidatedUser :: ByteString -> UnvalidatedUser -> User
+makeValidatedUser hashedPassword (UnvalidatedUser uvName uvEmail _) =
+  User uvName uvEmail $ decodeUtf8 hashedPassword
 
 weirdChars :: Char -> Bool
 weirdChars char = T.any (== char) ";/\\(){}[]"
