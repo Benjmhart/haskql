@@ -94,13 +94,6 @@ instance navigateAppM :: Navigate AppM where
     liftEffect Request.removeToken 
     navigate Route.Home
 
-get url = AX.request (AX.defaultRequest 
-                       { url = url
-                       , method = Left GET 
-                       , responseFormat = AXRF.string
-                       , headers = AX.defaultRequest.headers <> [ (AXRH.RequestHeader "Access-Control-Allow-Origin" "*") ]            }
-                     )
-
 instance fetchQuoteAppM :: FetchQuote AppM where
   fetchQuote symbol = do
       apiUrl <- asks _.apiUrl
