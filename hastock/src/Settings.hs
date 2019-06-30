@@ -61,6 +61,7 @@ data AppSettings = AppSettings
     , databaseUser              :: ByteString
     , databaseName              :: ByteString
     , databasePw                :: ByteString
+    , jwtSecret                 :: Text
     }
 
 instance FromJSON AppSettings where

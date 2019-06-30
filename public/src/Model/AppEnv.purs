@@ -134,4 +134,4 @@ instance registerAppM :: Register AppM where
       log $ "parsed" <> show parsed
       pure parsed
       where 
-        safeParseJSON = lmap (\_ -> "Invalid Login") <<< JSON.readJSON
+        safeParseJSON = lmap (\_ -> "Invalid Registration") <<< JSON.readJSON
