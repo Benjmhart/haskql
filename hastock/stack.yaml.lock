@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    hackage: graphql-api-0.3.0@sha256:57555fc53e397d341045d315b7172025cf336b8e947247c05c9379dc6bf9e835,3966
+    hackage: jwt-0.7.2@sha256:b5858c05476741b4dc7f9f075bb8c8aca128ed25a9f325d937d370aa3d4910e1,4073
     pantry-tree:
-      size: 2422
-      sha256: 68989ce9e0ba996531538d2e013776590c7c30de6ab5c139763b5f28a634ad26
+      size: 978
+      sha256: 8e5b90fe8051580276d073ec028eeb2073f993c42ed9db040d73261978687a0b
   original:
-    hackage: graphql-api-0.3.0@sha256:57555fc53e397d341045d315b7172025cf336b8e947247c05c9379dc6bf9e835
+    hackage: jwt-0.7.2@sha256:b5858c05476741b4dc7f9f075bb8c8aca128ed25a9f325d937d370aa3d4910e1
 snapshots:
 - completed:
-    size: 509471
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/12/26.yaml
-    sha256: 95f014df58d0679b1c4a2b7bf2b652b61da8d30de5f571abb0d59015ef678646
-  original: lts-12.26
+    size: 498402
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/24.yaml
+    sha256: 33e96adfe24f112b62f6edd22565cdbaa13155703bbfbfdc3d0a9bc6138ae7bf
+  original: lts-13.24

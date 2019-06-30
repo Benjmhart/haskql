@@ -10,9 +10,9 @@ to set up development, run
 # install stack
 curl -sSL https://get.haskellstack.org/ | sh
 #install postgres + development deps
-sudo apt-get install postgresql python-psycopg2 libpq-dev
+sudo apt-get install postgresql python-psycopg2 libpq-dev inotify-tools
 ## or the equivalent in brew
-# install spago + purescript
+# install spago purescript + parcel
 npm install -g spago purescript parcel
 
 stack install yesod yesod-bin
@@ -59,8 +59,6 @@ curl --header "Content-Type: application/json" \
   http://localhost:3000/api/v1/register
 ```
 
-<<<<<<< HEAD
-=======
 #### LoginR POST
 
 ```
@@ -70,7 +68,6 @@ curl --header "Content-Type: application/json" \
   http://localhost:3000/api/v1/login
 ```
 
->>>>>>> 5b00f4abe363f05605815307af21a35a6c95b07a
 #### UserR GET
 
 ```
