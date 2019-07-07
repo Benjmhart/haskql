@@ -54,6 +54,8 @@ PTH.share [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"] [PTH.persi
 instance ToJSON User where
   toJSON (User userName userEmail _) = object ["username" .= userName, "email" .= userEmail]
 
+getUserName :: User -> Text
+getUserName (User n _ _) = n
 
 data UserResponse = UserResponse { userResponseToken :: Text
                                  , userResponseName :: Text

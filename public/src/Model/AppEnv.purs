@@ -1,12 +1,12 @@
 module Model.AppEnv where
 
-import Prelude (class Applicative, class Apply, class Bind, class Functor, class Monad, type (~>), bind, discard, join, pure, unit, ($), (<$>), (<<<), (<>), (=<<), show)
+import Prelude
 
 import Effect.Aff (Aff, try)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 -- import Effect.Ref (Ref)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Bifunctor(lmap)
 import Data.Newtype (unwrap)
 import Data.Either(Either(..))
@@ -40,19 +40,19 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Model.Log as Log
 import Model.Route as Route
-import Api.Request as Request
 import Halogen.Router (pushRoute)
 import Model.Urls (ApiUrl, BaseUrl)
 import Model.UserPostBody(UserPostBody(..))
 import Model.Token(Token(..))
 import Data.HTTP.Method (Method(..))
-
+import Model.User(User)
+import Model.LocalStorage(deleteLocalStorage, tokenKey)
 
 type AppEnv =  
   { logLevel    :: LogLevel
   , apiUrl      :: ApiUrl
   , baseUrl     :: BaseUrl
-  , currentUser :: Ref (Maybe String) -- TODO make a User Type
+  , currentUser :: Ref (Maybe User) -- TODO make a User Type
   } 
 
 -- type User = {}
@@ -92,7 +92,7 @@ instance navigateAppM :: Navigate AppM where
 
   logout = do
     liftEffect <<< Ref.write Nothing =<< asks _.currentUser
-    liftEffect Request.removeToken 
+    liftEffect $ deleteLocalStorage tokenKey
     navigate Route.Home
 
 instance fetchQuoteAppM :: FetchQuote AppM where
@@ -132,7 +132,6 @@ instance registerAppM :: Register AppM where
         status = (networkErrorString $ _.status <$> response) :: Either String (AXSC.StatusCode)
         rb = (join $ responseErrorToString <$> nested) :: Either String String
         parsed = safeParseJSON =<< rb
-      log rb
       case status of
         (Left _) -> pure $ Left "Network Error"
         (Right (AXSC.StatusCode 200)) -> pure parsed
@@ -142,7 +141,3 @@ instance registerAppM :: Register AppM where
         (Right _) -> pure $ Left "unhandled exception"
       where 
         safeParseJSON = lmap (\_ -> "Invalid Registration") <<< JSON.readJSON
-
-eitherSwitch :: forall a. Either a a -> Either a a
-eitherSwitch (Right a) = Left a
-eitherSwitch (Left a) = Left a

@@ -2,6 +2,7 @@ module Core.Router where
 
 import Prelude
 
+import Effect.Ref(Ref)
 import Capability.Log (class Log)
 import Capability.Navigate (class Navigate)
 import Capability.Now (class Now)
@@ -19,6 +20,7 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HelperLib as HL
 import Model.Urls (ApiUrl)
+import Model.User (User)
 import Core.Router.Styles (coreLayout, bodyContent)
 
 -- coreLayoutSelector = 
@@ -48,17 +50,12 @@ type ChildSlots =
 component
   :: forall m r
    . MonadAff m
-  -- => MonadAsk { currentUser :: Ref (Maybe Profile) | r } m
   => Now m
   => Log m
   => Navigate m
-  => MonadAsk { apiUrl :: ApiUrl | r } m
+  => MonadAsk { apiUrl :: ApiUrl, currentUser :: Ref (Maybe User) | r } m
   => Register m
-  => FetchQuote m 
-  -- => ManageUser m
-  -- => ManageArticle m
-  -- => ManageComment m
-  -- => ManageTag m
+  => FetchQuote m
   => H.Component HH.HTML Query (Maybe Route) Void m
 component =
   H.mkComponent

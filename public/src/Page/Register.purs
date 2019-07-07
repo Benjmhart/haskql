@@ -3,11 +3,14 @@ module Page.Register  where
 import Prelude
 
 -- import Data.Array (concat)
-import Data.Maybe (Maybe(..))
+import Control.Applicative(when)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Either (Either(..))
 import Data.String.Utils as SU
 -- import Data.Either (hush)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref(Ref, write)
+import Effect.Class(liftEffect)
 -- import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -22,7 +25,7 @@ import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
 -- import Model.Route(Route(..))
-import Capability.Navigate (class Navigate)
+import Capability.Navigate (class Navigate, navigate)
 import Capability.Resource.Register (class Register, register)
 
 import Capability.Log (class Log, log)
@@ -38,7 +41,11 @@ import Page.Register.Styles (regForm, regLoginButtonWrapper)
 import Model.Urls(ApiUrl)
 import Model.UserPostBody(UserPostBody(..),validateUserPostBody)
 import Model.Token(Token)
-
+import Model.Route(Route(..))
+import Model.LocalStorage(tokenKey, setLocalStorage, getLocalStorage)
+import Data.Lens(view, _Right, _Just )
+import Model.UserResponseBody (UserResponseBody, _token, _name)
+import Model.User(User(..))
 
 type State =
   { loading :: Boolean
@@ -62,7 +69,7 @@ component :: forall m r
    => Navigate m
    => Log m
    => Register m
-   => MonadAsk { apiUrl :: ApiUrl | r } m
+   => MonadAsk { apiUrl :: ApiUrl, currentUser :: Ref (Maybe User) | r } m
    => H.Component HH.HTML (Const Void) Unit Void m
 component =
   H.mkComponent
@@ -153,6 +160,7 @@ component =
       verifyPassword <- H.gets _.verifyPassword
       let userPostBody = UserPostBody { email, password, name }
       apiUrl <- asks _.apiUrl
+      user <- asks _.currentUser
       case validateUserPostBody userPostBody verifyPassword of
         Left a ->  do
           log $ a
@@ -160,12 +168,13 @@ component =
         Right a -> do
           H.modify_ (_ { loading = true, result = (Right Nothing) })
           parsed <- register userPostBody
-          H.modify_ (_ { loading = false, result = parsed })
-          
-            -- set user in reader
-            -- set token  in localstorage
-            -- navigate home
-      -- TODO Move this out to a helper lib
+          let toSave = view (_Right <<< _Just <<< _token) parsed
+          when (toSave /= "") $
+            H.liftEffect $ setLocalStorage (tokenKey) toSave
+          let username = view (_Right <<< _Just <<< _name) parsed
+          let newUser = User { userName: username }
+          liftEffect $ write (Just newUser) user
+          navigate Home
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
       handleAction q

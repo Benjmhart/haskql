@@ -16,10 +16,13 @@ import           Database.Persist.Sql           ( fromSqlKey
                                                 )
 import qualified Data.Text                     as T
 import           Data.Char
+import qualified Data.List                     as L
 import qualified Data.Map                      as Map
 import           Yesod.Auth.Util.PasswordStore  ( makePassword, verifyPassword )
 import qualified Web.JWT                       as JWT
 import           Database.PostgreSQL.Simple (SqlError(..))
+import qualified Network.Wai as WAI
+import qualified Network.Wai.Internal as WAIINT
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -54,17 +57,25 @@ getIdFromJWT jwt secret = do
   dbRecordKey <- resultToMaybe . fromJSON $ dbRecordKeyJSON
   readIntegral dbRecordKey
 
-getUserR :: Text -> HandlerFor App Value
-getUserR jwt = do
+getUserR :: HandlerFor App Value
+getUserR = do
   app <- getYesod
-  case getIdFromJWT jwt (jwtSecret $ appSettings app) of
-    Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
-    Just parsedId -> do
-      userEntity <- runDB $ do
-        get (toSqlKey parsedId :: Key User)
-      case userEntity of
-          Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
-          Just user -> return $ toJSON user
+  req <- waiRequest 
+  let 
+    headers = WAI.requestHeaders req
+    getJWT = \j -> getIdFromJWT j (jwtSecret $ appSettings app)
+    mayJWT = drop 7 . decodeUtf8 <$> L.lookup "authorization" headers
+  case mayJWT of
+    Nothing -> sendResponseStatus error500 ("Token not provided" :: T.Text)
+    Just j -> do
+      case getJWT j of
+        Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
+        Just parsedId -> do
+          userEntity <- runDB $ do
+            get (toSqlKey parsedId :: Key User)
+          case userEntity of
+              Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
+              Just user -> return $ toJSON UserResponse { userResponseName = getUserName user, userResponseToken = j }
 
 
 
