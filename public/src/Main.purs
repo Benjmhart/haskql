@@ -32,6 +32,7 @@ import Api.Endpoint(Endpoint(..), endpointCodec)
 import Routing.Duplex (print)
 import Data.HTTP.Method(Method(..))
 import Simple.JSON as JSON
+import Capability.Navigate(navigate, logout)
 
 
 -- | Run the app.
@@ -45,27 +46,7 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
     reqUrl = apiUrl <> ep
   
   H.liftEffect $ log $ "request url in use " <> reqUrl
-  H.liftEffect $ getLocalStorage tokenKey >>= traverse_ \tokenString -> do 
-    log $ "token : " 
-    log tokenString
-    HA.runHalogenAff do
-      res <- try $ AX.request AX.defaultRequest 
-        { method = Left GET
-        , url = reqUrl
-        , headers = [ AXRH.RequestHeader "authorization" $ "Bearer " <> tokenString ]
-        , responseFormat = AXRF.string
-        }
-      let 
-        nested = (networkErrorString $ _.body <$> res) :: Either String (Either AXRF.ResponseFormatError String)
-        status = (networkErrorString $ _.status <$> res) :: Either String (AXSC.StatusCode)
-        rb = (join $ responseErrorToString <$> nested) :: Either String String
-        safeParseJSON = lmap (\_ -> "Invalid Token") <<< JSON.readJSON
-        parsed = (safeParseJSON =<< rb :: Either String { userResponseName :: String, userResponseToken :: String })
-        u = (\p -> User { userName: p.userResponseName }) <$> parsed
-        
-      when (status == (Right (AXSC.StatusCode 200))) $ do
-        H.liftEffect $ Ref.write (hush u) currentUser
-        H.liftEffect $ log "it is done!"
+  H.liftEffect $ getLocalStorage tokenKey >>= traverse_ (processToken reqUrl currentUser)
   initialRoute <- H.liftEffect $ getRoute
   let
     appEnv :: AppEnv
@@ -81,3 +62,24 @@ main logLevel apiUrl baseUrl = HA.runHalogenAff do
       Just a -> launchAff_ $ halogenIO.query $ H.tell $ Router.Navigate a
 
   pure unit
+
+processToken :: String -> Ref.Ref (Maybe User) -> String -> Effect Unit
+processToken reqUrl currentUser = \tokenString -> do 
+    HA.runHalogenAff do
+      res <- try $ AX.request AX.defaultRequest 
+        { method = Left GET
+        , url = reqUrl
+        , headers = [ AXRH.RequestHeader "authorization" $ "Bearer " <> tokenString ]
+        , responseFormat = AXRF.string
+        }
+      let 
+        nested = (networkErrorString $ _.body <$> res) :: Either String (Either AXRF.ResponseFormatError String)
+        status = (networkErrorString $ _.status <$> res) :: Either String (AXSC.StatusCode)
+        rb = (join $ responseErrorToString <$> nested) :: Either String String
+        safeParseJSON = lmap (\_ -> "Invalid Token") <<< JSON.readJSON
+        parsed = (safeParseJSON =<< rb :: Either String { userResponseName :: String, userResponseToken :: String })
+        u = (\p -> User { userName: p.userResponseName }) <$> parsed
+      when (status == (Right (AXSC.StatusCode 200))) $ do
+        H.liftEffect $ Ref.write (hush u) currentUser
+      when (status /= (Right (AXSC.StatusCode 200))) $ do
+        logout currentUser

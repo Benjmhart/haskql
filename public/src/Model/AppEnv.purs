@@ -90,8 +90,8 @@ instance logAppM :: Log AppM where
 instance navigateAppM :: Navigate AppM where
   navigate = liftEffect <<< pushRoute 
 
-  logout = do
-    liftEffect <<< Ref.write Nothing =<< asks _.currentUser
+  logout currentUser = do
+    liftEffect $ Ref.write Nothing currentUser
     liftEffect $ deleteLocalStorage tokenKey
     navigate Route.Home
 

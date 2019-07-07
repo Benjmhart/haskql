@@ -110,7 +110,7 @@ makeApplication foundation = do
     appPlain <- toWaiAppPlain foundation
     return $ makeSpaRoutes . corsMiddleware . logWare $ defaultMiddlewaresNoLogging appPlain
     where 
-      corsMiddleware = cors . const . Just $ simpleCorsResourcePolicy { corsRequestHeaders = "authorization":simpleHeaders, corsOrigins = Nothing, corsMethods = [methodGet, methodPost, methodPut, methodDelete] }
+      corsMiddleware = cors . const . Just $ simpleCorsResourcePolicy { corsRequestHeaders = simpleHeaders ++ ["authorization"], corsOrigins = Nothing, corsMethods = [methodGet, methodPost, methodPut, methodDelete] }
 
 -- TODO: possibly publish this as a helper middleware
 makeSpaRoutes :: Middleware

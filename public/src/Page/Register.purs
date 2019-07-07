@@ -168,7 +168,10 @@ component =
         Right a -> do
           H.modify_ (_ { loading = true, result = (Right Nothing) })
           parsed <- register userPostBody
-          let toSave = view (_Right <<< _Just <<< _token) parsed
+          log $ show parsed
+          let 
+            toSave = view (_Right <<< _Just <<< _token) parsed
+          log $ show toSave
           when (toSave /= "") $
             H.liftEffect $ setLocalStorage (tokenKey) toSave
           let username = view (_Right <<< _Just <<< _name) parsed
