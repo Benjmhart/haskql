@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE DataKinds              #-}
-
+{-# LANGUAGE TypeApplications #-}
 module Handler.Home where
 
 import           Import
@@ -18,11 +18,13 @@ import qualified Data.Text                     as T
 import           Data.Char
 import qualified Data.List                     as L
 import qualified Data.Map                      as Map
-import           Yesod.Auth.Util.PasswordStore  ( makePassword, verifyPassword )
+import           Yesod.Auth.Util.PasswordStore  ( makePassword
+                                                , verifyPassword
+                                                )
 import qualified Web.JWT                       as JWT
-import           Database.PostgreSQL.Simple (SqlError(..))
-import qualified Network.Wai as WAI
-import qualified Network.Wai.Internal as WAIINT
+import           Database.PostgreSQL.Simple     ( SqlError(..) )
+import qualified Network.Wai                   as WAI
+import qualified Network.Wai.Internal          as WAIINT
 
 getHomeR :: Handler ()
 getHomeR = sendFile "text/html" "static/index.html"
@@ -41,91 +43,114 @@ error404 :: Status
 error404 = Status 404 "client not found"
 
 resultToMaybe :: Result a -> Maybe a
-resultToMaybe (Error _) = Nothing
+resultToMaybe (Error   _    ) = Nothing
 resultToMaybe (Success value) = Just value
 
 makeJWTClaimsSet :: Key User -> JWT.JWTClaimsSet
 makeJWTClaimsSet dbEntity = JWT.def
-          { JWT.unregisteredClaims =
-            Map.fromList [("id", String . tshow . fromSqlKey $ dbEntity)]
-          }
+  { JWT.unregisteredClaims = Map.fromList
+                               [("id", String . tshow . fromSqlKey $ dbEntity)]
+  }
 
-getIdFromJWT :: Text -> Text ->  Maybe Int64
-getIdFromJWT jwt secret = do 
-  parsedJWT <- JWT.decodeAndVerifySignature (JWT.secret secret) jwt
+getIdFromJWT :: Text -> Text -> Maybe Int64
+getIdFromJWT jwt secret = do
+  parsedJWT       <- JWT.decodeAndVerifySignature (JWT.secret secret) jwt
   dbRecordKeyJSON <- lookup "id" . JWT.unregisteredClaims $ JWT.claims parsedJWT
-  dbRecordKey <- resultToMaybe . fromJSON $ dbRecordKeyJSON
+  dbRecordKey     <- resultToMaybe . fromJSON $ dbRecordKeyJSON
   readIntegral dbRecordKey
+
+as :: a -> a
+as x = x
 
 getUserR :: HandlerFor App Value
 getUserR = do
   app <- getYesod
-  req <- waiRequest 
-  let 
-    headers = WAI.requestHeaders req
-    getJWT = \j -> getIdFromJWT j (jwtSecret $ appSettings app)
-    mayJWT = drop 7 . decodeUtf8 <$> L.lookup "authorization" headers
-  case mayJWT of
-    Nothing -> sendResponseStatus error500 ("Token not provided" :: T.Text)
-    Just j -> do
-      case getJWT j of
-        Nothing -> sendResponseStatus error500 ("error parsing credentials, please try logging in" :: T.Text)
-        Just parsedId -> do
-          userEntity <- runDB $ do
-            get (toSqlKey parsedId :: Key User)
-          case userEntity of
-              Nothing -> sendResponseStatus error404 ("invalid credentials, please try logging in" :: T.Text)
-              Just user -> return $ toJSON UserResponse { userResponseName = getUserName user, userResponseToken = j }
+  req <- waiRequest
+  let headers  = WAI.requestHeaders req
+      getJWTId = flip getIdFromJWT (jwtSecret $ appSettings app)
+      mayJWT   = drop 7 . decodeUtf8 <$> L.lookup "authorization" headers
+  jwt <- errorIfNothing "Token not provided" mayJWT
+  parsedId <- errorIfNothing "error parsing credentials, please try logging in" (getJWTId jwt)
+  mayUserEntity <- runDB (get $ toSqlKey parsedId)
+  user <- errorIfNothing "invalid credentials, please try logging in" mayUserEntity
+  return $ buildResponseJson jwt user
 
 
+errorIfNothing :: MonadHandler m => Text -> Maybe a -> m a
+errorIfNothing eText = maybe (sendResponseStatus error500 eText) pure
+
+buildResponseJson :: -> Text -> User -> Value
+buildResponseJson jwt user = toJSON UserResponse 
+  { userResponseName = getUserName user
+  , userResponseToken = jwt
+  }
 
 postLoginR :: HandlerFor App Value
 postLoginR = do
-  app <- getYesod
+  app  <- getYesod
   body <- requireCheckJsonBody :: Handler Value
   case (fromJSON body :: Result LoginInfo) of
-    Error s               ->  sendResponseStatus error500 $ toJSON s
-    Success loginDetails  ->  runDB $ do
+    Error   s            -> sendResponseStatus error500 $ toJSON s
+    Success loginDetails -> runDB $ do
       userRecord <- getBy $ UniqueEmail $ loginEmail loginDetails
       case userRecord of
-        Nothing -> sendResponseStatus error404 $ toJSON ("email does not exist, please register or try again" :: T.Text)
+        Nothing -> sendResponseStatus error404 $ toJSON
+          ("email does not exist, please register or try again" :: T.Text)
         Just entity@(Entity _ dbUser) -> if (invalidPassword)
-          then sendResponseStatus error404 $ toJSON ("invalid password, please try again" :: T.Text)
-          else return $ toJSON $ UserResponse (jwt $ JWT.secret $ jwtSecret $ appSettings app) $ userName dbUser
-            where
-              invalidPassword = not $ verifyPassword (encodeUtf8 . loginPassword $ loginDetails) (encodeUtf8 . userPassword $ dbUser)
-              -- cs = JWT.def { JWT.unregisteredClaims =
-              --   Map.fromList [("id", String . tshow . fromSqlKey $ )]
-              -- }
-              jwt secret = JWT.encodeSigned JWT.HS256 secret $ makeJWTClaimsSet $ entityKey entity
+          then sendResponseStatus error404
+            $ toJSON ("invalid password, please try again" :: T.Text)
+          else
+            return
+            $ toJSON
+            $ UserResponse (jwt $ JWT.secret $ jwtSecret $ appSettings app)
+            $ userName dbUser
+         where
+          invalidPassword = not $ verifyPassword
+            (encodeUtf8 . loginPassword $ loginDetails)
+            (encodeUtf8 . userPassword $ dbUser)
+          -- cs = JWT.def { JWT.unregisteredClaims =
+          --   Map.fromList [("id", String . tshow . fromSqlKey $ )]
+          -- }
+          jwt secret =
+            JWT.encodeSigned JWT.HS256 secret $ makeJWTClaimsSet $ entityKey
+              entity
 
 
 -- TODO: Make sure username and email are lowercased
 postRegisterR :: HandlerFor App Value
 postRegisterR = do
-  app <- getYesod
+  app  <- getYesod
   body <- requireCheckJsonBody :: Handler Value
-  let unvalidatedUser  =  fromJSON body :: Result UnvalidatedUser
-  let validatedUser    =  passwordValidator
-                      =<< emailValidator
-                      =<< nameValidator
-                      =<< unvalidatedUser
+  let unvalidatedUser = fromJSON body :: Result UnvalidatedUser
+  let validatedUser =
+        passwordValidator
+          =<< emailValidator
+          =<< nameValidator
+          =<< unvalidatedUser
   case validatedUser of
     (Error   str) -> sendResponseStatus error500 $ toJSON str
     (Success vu ) -> do
       hashedPassword <- liftIO
         $ (flip makePassword 10 . encodeUtf8 . password) vu
       dbEntity <- catch
-                    (runDB $ insert $ makeValidatedUser hashedPassword vu)
-                    (\e -> do
-                        case e of 
-                          -- TODO: match error to determine if it's unique email or unique username error
-                          (SqlError _ _ msg _ _) -> sendResponseStatus error500 $ toJSON $ ("email already registered" :: Text)
-                          _ -> sendResponseStatus error500 $ toJSON $ show e)
-      return $ toJSON 
-             $ UserResponse 
-                (JWT.encodeSigned JWT.HS256 (JWT.secret $ jwtSecret $ appSettings app) (makeJWTClaimsSet dbEntity))
-             $ Model.User.name vu
+        (runDB $ insert $ makeValidatedUser hashedPassword vu)
+        (\e -> do
+          case e of
+            -- TODO: match error to determine if it's unique email or unique username error
+            (SqlError _ _ msg _ _) ->
+              sendResponseStatus error500
+                $ toJSON
+                $ ("email already registered" :: Text)
+            _ -> sendResponseStatus error500 $ toJSON $ show e
+        )
+      return
+        $ toJSON
+        $ UserResponse
+            (JWT.encodeSigned JWT.HS256
+                              (JWT.secret $ jwtSecret $ appSettings app)
+                              (makeJWTClaimsSet dbEntity)
+            )
+        $ Model.User.name vu
 
 makeValidatedUser :: ByteString -> UnvalidatedUser -> User
 makeValidatedUser hashedPassword (UnvalidatedUser uvName uvEmail _) =
