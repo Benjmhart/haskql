@@ -4,6 +4,26 @@
 
 Development Servers:
 
+to set up development, run
+
+```
+# install stack
+curl -sSL https://get.haskellstack.org/ | sh
+#install postgres + development deps
+sudo apt-get install postgresql python-psycopg2 libpq-dev inotify-tools
+## or the equivalent in brew
+# install spago purescript + parcel
+npm install -g spago purescript parcel
+
+stack install yesod yesod-bin
+
+# set up postgres
+sudo -u postgres psql
+CREATE DATABASE hastock;
+CREATE USER hastock WITH ENCRYPTED PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE hastock TO hastock;
+```
+
 running `./hastock/stack exec -- yesod devel` will start a development server for the backend.
 
 running `./public/npm start` will start a hot reloading front end server - right now the new component is mounted below the old one - this will be addressed soon.

@@ -32,3 +32,5 @@ dbPassword: '_env:PGPASS:password'
 
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
+# jwt secret
+jwtSecret: '_env:JWT_SECRET:C4YPT0G4APHY'

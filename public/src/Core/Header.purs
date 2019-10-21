@@ -1,8 +1,8 @@
 module Core.Header where 
 
-import Prelude (type (~>), Void, discard, identity, pure, ($))
+import Prelude (type (~>), Unit, Void, discard, identity, pure, ($))
 import Capability.Navigate (class Navigate, navigate)
-import Capability.LogMessages (class LogMessages)
+import Capability.Log (class Log)
 import Effect.Aff.Class (class MonadAff)
 import Web.Event.Internal.Types (Event)
 import Web.UIEvent.MouseEvent (toEvent)
@@ -13,33 +13,36 @@ import Halogen.HTML.Properties as HP
 import Halogen.HelperLib as HL
 import Core.Header.Styles (header, titleBar, brand, nav, navItem, navItemLink)
 import Model.Route (Route(..))
+import Data.Const (Const)
+import Data.Maybe (Maybe(..))
 
 type State = Route 
 
-data Query a
-  = SetRoute Route a 
-  | GoRegister a 
-  | GoHome a 
-  | PreventDefault Event (Query a) -- GoLogin, etc
+data Action
+  = SetRoute Route 
+  | GoRegister 
+  | GoHome 
+  | PreventDefault Event (Action) -- GoLogin, etc
 
 type Input = Route
 
 component
   :: forall m 
    . MonadAff m
-  => LogMessages m
+  => Log m
   => Navigate m
-  => H.Component HH.HTML Query Input Void m
+  => H.Component HH.HTML (Const Void) Route Void m
 component = 
-    H.component
+    H.mkComponent
     { initialState: identity 
     , render
-    , eval
-    , receiver: HE.input SetRoute  -- the r is implicit through pointfree
+    , eval: H.mkEval $ H.defaultEval { 
+      handleAction = handleAction 
+      }  -- the r is implicit through pointfree
     }
   where 
     -- TODO: Case match over route to hide irrelevant navigation options
-    render :: State -> H.ComponentHTML Query
+    render :: State -> H.ComponentHTML Action () m
     render r =
       HH.div
         [ HL.class_ header]
@@ -56,9 +59,10 @@ component =
                 [ HH.a
                   [ HL.class_ navItemLink
                   , HP.href "#"
-                  , HE.onClick $ HL.inputR \e ->
-                                PreventDefault (toEvent e) $
-                                H.action $ GoHome
+                  , HE.onClick $ (\e -> Just $
+                                    PreventDefault (toEvent e) $
+                                    GoHome
+                                 )
                   ]
                   [ HH.text "Home" ]
                 ]
@@ -67,25 +71,23 @@ component =
                 [ HH.a
                   [ HL.class_ navItemLink
                   , HP.href "#"
-                  , HE.onClick $ HL.inputR \e ->
-                                PreventDefault (toEvent e) $
-                                H.action $ GoRegister
+                  , HE.onClick $ (\e -> Just $
+                                  PreventDefault (toEvent e) $
+                                  GoRegister
+                                 )
                   ]
                   [ HH.text "Register" ]
                 ]
             ]
         ]
-    eval :: Query ~> H.ComponentDSL State Query Void m
-    eval = case _ of
-      SetRoute r next -> do
+    handleAction :: Action -> H.HalogenM State Action () Void m Unit
+    handleAction = case _ of
+      SetRoute r -> do
         H.put r
-        pure next
-      GoRegister next -> do
+      GoRegister -> do
         navigate Register
-        pure next
-      GoHome next -> do
+      GoHome -> do
         navigate Home
-        pure next
       PreventDefault e q -> do
         H.liftEffect $ HL.preventDefault e
-        eval q
+        handleAction q

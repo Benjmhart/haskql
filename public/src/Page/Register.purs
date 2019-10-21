@@ -1,11 +1,16 @@
-module Page.Register (State, Query(..), component) where
+module Page.Register  where
 
-import Prelude (type (~>), Unit, Void, bind, const, discard, pure, ($))
+import Prelude
 
 -- import Data.Array (concat)
-import Data.Maybe (Maybe(..) )
+import Control.Applicative(when)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Either (Either(..))
+import Data.String.Utils as SU
 -- import Data.Either (hush)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Ref(Ref, write)
+import Effect.Class(liftEffect)
 -- import Effect.Console (log)
 import Halogen as H
 import Halogen.HTML as HH
@@ -20,7 +25,10 @@ import Web.UIEvent.MouseEvent (toEvent)
 import Control.Monad.Reader (class MonadAsk, asks)
 
 -- import Model.Route(Route(..))
-import Capability.Navigate (class Navigate)
+import Capability.Navigate (class Navigate, navigate)
+import Capability.Resource.Register (class Register, register)
+
+import Capability.Log (class Log, log)
 import Atomic.PrimaryButton (primaryButton)
 import Atomic.FieldLabel (fieldLabel_)
 import Atomic.TextField (textField)
@@ -28,103 +36,149 @@ import Atomic.Field (field_)
 import Atomic.LoadingDisplay (loadingDisplay)
 import Atomic.SubHeader (subHeader)
 import Atomic.ErrorDisplay (errorDisplay)
+import Data.Const (Const)
 import Page.Register.Styles (regForm, regLoginButtonWrapper)
 import Model.Urls(ApiUrl)
-
+import Model.UserPostBody(UserPostBody(..),validateUserPostBody)
+import Model.Token(Token)
+import Model.Route(Route(..))
+import Model.LocalStorage(tokenKey, setLocalStorage, getLocalStorage)
+import Data.Lens(view, _Right, _Just )
+import Model.UserResponseBody (UserResponseBody, _token, _name)
+import Model.User(User(..))
 
 type State =
   { loading :: Boolean
+  , name :: String
   , email :: String
   , password :: String
-  , error :: Maybe String
+  , verifyPassword :: String
+  , result :: Either String (Maybe Token)
   }
 
-data Query a
-  = SetEmail String a
-  | SetPassword String a
-  | Submit a
-  | PreventDefault Event (Query a)
+data Action
+  = SetEmail String
+  | SetName String
+  | SetPassword String
+  | SetVerifyPassword String
+  | Submit
+  | PreventDefault Event (Action)
 
 component :: forall m r
     . MonadAff m
    => Navigate m
-   => MonadAsk { apiUrl :: ApiUrl | r } m
-   => H.Component HH.HTML Query Unit Void m
+   => Log m
+   => Register m
+   => MonadAsk { apiUrl :: ApiUrl, currentUser :: Ref (Maybe User) | r } m
+   => H.Component HH.HTML (Const Void) Unit Void m
 component =
-  H.component
+  H.mkComponent
     { initialState: const initialState
     , render
-    , eval
-    , receiver: const Nothing
+    , eval: H.mkEval  $ H.defaultEval 
+      { handleAction = handleAction
+      }
     }
   where
 
   initialState :: State
-  initialState = { loading: false, email: "", password: "", error: Nothing}
+  initialState = { loading: false, name:"", email: "", password: "", verifyPassword: "", result: Right Nothing}
 
-  render :: State -> H.ComponentHTML Query
+  render :: State -> H.ComponentHTML Action () m
   render st =
     HH.div_
-      [ subHeader "Register"
-      , HH.form 
-          [HL.class_ regForm]
-          -- TODO make the fields width adjustable
-          [ field_
-              [ fieldLabel_ [ HH.text "Email: " ]
-              , textField
-                  [ HP.value st.email
-                  , HE.onValueInput (HE.input SetEmail)
-                  ]
-              ]
-          , field_
-              [ fieldLabel_ [ HH.text "Password:" ]
-              , textField
-                  [ HP.value st.password
-                  , HE.onValueInput (HE.input SetPassword)
-                  ]
-              ]
-          , HH.div
-              [ HL.class_ regLoginButtonWrapper ] 
-              [ primaryButton
-                  [ HP.disabled st.loading
-                  , HE.onClick $ HL.inputR \e ->
-                                  PreventDefault (toEvent e) $
-                                  H.action $ Submit
-                  ]
-                  [ HH.text "submit" ]
-              ]
-          , loadingDisplay st.loading
-          , HH.div_ $
-              case st.error of
-                Nothing -> []
-                Just err -> [ errorDisplay err ]
-          ]
-      ]
+        [ subHeader "Register"
+        , HH.form 
+            [HL.class_ regForm]
+            -- TODO make the fields width adjustable
+            [ field_
+                [ fieldLabel_ [ HH.text "Username: " ]
+                , textField
+                    [ HP.value st.name
+                    , HE.onValueInput (Just <<< SetName)
+                    ]
+                ]
+            , field_
+                [ fieldLabel_ [ HH.text "Email: " ]
+                , textField
+                    [ HP.value st.email
+                    , HE.onValueInput (Just <<< SetEmail)
+                    , HP.type_ HP.InputEmail
+                    ]
+                ]
+            , field_
+                [ fieldLabel_ [ HH.text "Password:" ]
+                , textField
+                    [ HP.value st.password
+                    , HE.onValueInput (Just <<< SetPassword)
+                    , HP.type_ HP.InputPassword
+                    ]
+                ]
+            , field_
+                [ fieldLabel_ [ HH.text "Verify Password:" ]
+                , textField
+                    [ HP.value st.verifyPassword
+                    , HE.onValueInput (Just <<< SetVerifyPassword)
+                    , HP.type_ HP.InputPassword
+                    ]
+                ]
+            , HH.div
+                [ HL.class_ regLoginButtonWrapper ] 
+                [ primaryButton
+                    [ HP.disabled st.loading
+                    , HE.onClick $ (\e -> Just $
+                                    PreventDefault (toEvent e) $
+                                    Submit
+                                   )
+                    ]
+                    [ HH.text "submit" ]
+                ]
+            ]
+        , loadingDisplay st.loading
+        , HH.div_ $
+            case st.result of
+              Right _ -> []
+              Left err -> [ errorDisplay ("Error: " <> SU.filter (\c -> c /= "\"" ) err) ]
+        ]
 
   --  TODO: pull out pure parts into their own functions
-  eval :: Query ~> H.ComponentDSL State Query Void m
-  eval = case _ of
-    SetEmail email next -> do
+  handleAction :: Action -> H.HalogenM State Action () Void m Unit
+  handleAction = case _ of
+    SetEmail email -> do
       H.modify_ (_ { email = email })
-      pure next
-    SetPassword password next -> do
+    SetName name -> do
+      H.modify_ (_ { name = name})
+    SetPassword password-> do
       H.modify_ (_ { password = password })
-      pure next
-    Submit next -> do
+    SetVerifyPassword verifyPassword-> do
+      H.modify_ (_ { verifyPassword = verifyPassword })
+    Submit -> do
     --TODO - move  the API call here + parsing to a capability file
       email <- H.gets _.email
+      name <- H.gets _.name
       password <- H.gets _.password
+      verifyPassword <- H.gets _.verifyPassword
+      let userPostBody = UserPostBody { email, password, name }
       apiUrl <- asks _.apiUrl
-      -- H.liftEffect $ log $ "api url in use: " <> apiUrl
-      -- let reqUrl = apiUrl <> "/stocks/" <> symbol
-      -- H.modify_ (_ { loading = true })
-      -- response <- H.liftAff $ AX.get AXRF.string (reqUrl)
-      -- let rb = hush response.body
-      -- let (q :: Maybe Quote) = hush <<< JSON.readJSON =<< rb
-      -- let e = if isNothing q then Just "Invalid Symbol" else Nothing
-      -- H.modify_ (_ { loading = false, result = q, error = e })
-      pure next
-      -- TODO Move this out to a helper lib
+      user <- asks _.currentUser
+      case validateUserPostBody userPostBody verifyPassword of
+        Left a ->  do
+          log $ a
+          H.modify_ (_ { result =  Left a })
+        Right a -> do
+          H.modify_ (_ { loading = true, result = (Right Nothing) })
+          parsed <- register userPostBody
+          log $ show parsed
+          let 
+            toSave = view (_Right <<< _Just <<< _token) parsed
+          log $ show toSave
+          when (toSave /= "") $
+            H.liftEffect $ setLocalStorage (tokenKey) toSave
+          let username = view (_Right <<< _Just <<< _name) parsed
+          let newUser = User { userName: username }
+          liftEffect $ write (Just newUser) user
+          navigate Home
     PreventDefault e q -> do
       H.liftEffect $ HL.preventDefault e
-      eval q
+      handleAction q
+

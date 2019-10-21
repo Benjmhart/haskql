@@ -2,10 +2,14 @@
 Welcome to a Spago project!
 You can edit this file as you like.
 -}
-{ name =
+{ sources =
+    [ "src/**/*.purs", "test/**/*.purs" ]
+, name =
     "hsql-pub"
 , dependencies =
     [ "affjax"
+    , "argonaut"
+    , "argonaut-codecs"
     , "arrays"
     , "console"
     , "css"
@@ -17,14 +21,18 @@ You can edit this file as you like.
     , "halogen"
     , "halogen-css"
     , "lists"
+    , "maybe"
     , "node-process"
     , "now"
     , "optparse"
+    , "profunctor-lenses"
     , "psci-support"
+    , "refs"
     , "routing"
     , "routing-duplex"
     , "simple-json"
     , "slug"
+    , "stringutils"
     ]
 , packages =
     ./packages.dhall

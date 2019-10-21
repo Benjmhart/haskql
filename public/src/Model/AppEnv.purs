@@ -1,14 +1,16 @@
 module Model.AppEnv where
 
-import Prelude (class Applicative, class Apply, class Bind, class Functor, class Monad, type (~>), bind, discard, join, pure, unit, ($), (<$>), (<<<), (<>), (=<<))
+import Prelude
 
 import Effect.Aff (Aff, try)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 -- import Effect.Ref (Ref)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Bifunctor(lmap)
 import Data.Newtype (unwrap)
+import Data.Either(Either(..))
+import Data.HTTP.Method(Method(..))
 -- import Data.Either (Either(..))
 import Control.Monad.Reader.Trans (class MonadAsk, ReaderT, ask, asks, runReaderT)
 import Effect.Exception (Error)
@@ -16,31 +18,41 @@ import Simple.JSON as JSON
 import Type.Equality (class TypeEquals, from)
 import Control.Monad.Error.Class(class MonadThrow, class MonadError)
 import Capability.Now (class Now)
-import Capability.LogMessages (class LogMessages)
+import Capability.Log (class Log, log)
 import Capability.Navigate (class Navigate, navigate)
 import Capability.Resource.FetchQuote (class FetchQuote)
+import Capability.Resource.Register (class Register)
 import Halogen as H
 import Effect.Now as Now
 import Effect.Console as Console
 import Data.Either(Either)
 import Affjax as AX
 import Affjax.ResponseFormat as AXRF
+import Affjax.RequestBody as AXRB
+import Affjax.RequestHeader as AXRH
+import Affjax.StatusCode as AXSC
+import Data.Argonaut.Core as J
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.MediaType as MT
 import Api.Endpoint(Endpoint(..), endpointCodec)
 import Routing.Duplex (print)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Model.Log as Log
 import Model.Route as Route
-import Api.Request as Request
 import Halogen.Router (pushRoute)
 import Model.Urls (ApiUrl, BaseUrl)
-
+import Model.UserPostBody(UserPostBody(..))
+import Model.Token(Token(..))
+import Data.HTTP.Method (Method(..))
+import Model.User(User)
+import Model.LocalStorage(deleteLocalStorage, tokenKey)
 
 type AppEnv =  
   { logLevel    :: LogLevel
   , apiUrl      :: ApiUrl
   , baseUrl     :: BaseUrl
-  , currentUser :: Ref (Maybe String) -- TODO make a User Type
+  , currentUser :: Ref (Maybe User) -- TODO make a User Type
   } 
 
 -- type User = {}
@@ -72,37 +84,60 @@ instance nowAppM :: Now AppM where
   nowTime = liftEffect Now.nowTime
   nowDateTime = liftEffect Now.nowDateTime
 
-instance logMessagesAppM :: LogMessages AppM where
-  logMessage log = do 
-    env <- ask
-    liftEffect case Log.reason log of
-      Log.Debug -> pure unit
-      _ -> Console.log $ Log.message log
+instance logAppM :: Log AppM where
+  log a = liftEffect $ Console.log $ show a
 
 instance navigateAppM :: Navigate AppM where
-  navigate = 
-    liftEffect <<< pushRoute 
+  navigate = liftEffect <<< pushRoute 
 
-  logout = do
-    liftEffect <<< Ref.write Nothing =<< asks _.currentUser
-    liftEffect Request.removeToken 
+  logout currentUser = do
+    liftEffect $ Ref.write Nothing currentUser
+    liftEffect $ deleteLocalStorage tokenKey
     navigate Route.Home
 
 instance fetchQuoteAppM :: FetchQuote AppM where
   fetchQuote symbol = do
       apiUrl <- asks _.apiUrl
       H.liftEffect $ Console.log $ "api url in use: " <> (unwrap apiUrl)
-      let ep = print endpointCodec $ FetchQuote (unwrap symbol)
-      let reqUrl = (unwrap apiUrl) <> ep
+      let 
+        ep = print endpointCodec $ FetchQuote (unwrap symbol)
+        reqUrl = (unwrap apiUrl) <> ep
       response <- H.liftAff $ try $ AX.get AXRF.string (reqUrl)
       let 
         nested = (networkErrorString $ _.body <$> response) :: Either String (Either AXRF.ResponseFormatError String) 
         rb = (join $ responseErrorToString <$> nested) :: Either String String
         parsed = safeParseJSON =<< rb
       pure parsed
-    where
-      -- message from Effect.Exception to get network error as string
-      networkErrorString = (lmap (\_ -> "Network error")) 
-      responseErrorToString = lmap AXRF.printResponseFormatError
-      -- (unLines <<< (map renderForeignError) to lmap and get errors
-      safeParseJSON = lmap (\_ -> "Invalid Symbol") <<< JSON.readJSON
+      where 
+        safeParseJSON = lmap (\_ -> "Invalid Symbol") <<< JSON.readJSON
+
+-- message from Effect.Exception to get network error as string
+networkErrorString = (lmap (\_ -> "Network error")) 
+responseErrorToString = lmap AXRF.printResponseFormatError
+-- (unLines <<< (map renderForeignError) to lmap and get errors
+
+instance registerAppM :: Register AppM where
+  register userPostBody = do
+      apiUrl <- asks _.apiUrl
+      let 
+        ep = print endpointCodec $ Register
+        reqUrl = (unwrap apiUrl) <> ep
+      log $ "api url in use: " <> (reqUrl)
+      let  requestBody = AXRB.json $ encodeJson userPostBody
+      -- TODO: factor the call out into its own typeclass
+
+      response <- H.liftAff $ try $ AX.post AXRF.string (reqUrl) requestBody
+      let 
+        nested = (networkErrorString $ _.body <$> response) :: Either String (Either AXRF.ResponseFormatError String)
+        status = (networkErrorString $ _.status <$> response) :: Either String (AXSC.StatusCode)
+        rb = (join $ responseErrorToString <$> nested) :: Either String String
+        parsed = safeParseJSON =<< rb
+      case status of
+        (Left _) -> pure $ Left "Network Error"
+        (Right (AXSC.StatusCode 200)) -> pure parsed
+        (Right (AXSC.StatusCode 500)) -> case rb of
+          (Left e) -> pure $ Left e
+          (Right r) -> pure $ Left r
+        (Right _) -> pure $ Left "unhandled exception"
+      where 
+        safeParseJSON = lmap (\_ -> "Invalid Registration") <<< JSON.readJSON

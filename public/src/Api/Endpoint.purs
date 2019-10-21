@@ -71,6 +71,7 @@ type Pagination = { | PaginationRep  }
 -- | invalid endpoints (endpoints not captured in this type) will fail to compile.
 data Endpoint = Register-- TODO make Email/Password constructor
               | FetchQuote String 
+              | GetUser
   --login, forgot, changepassword, etc.
 derive instance genericEndpoint :: Generic Endpoint _
 
@@ -92,6 +93,7 @@ endpointCodec :: RouteDuplex' Endpoint
 endpointCodec = root $ sum
   { "Register": "register" / noArgs 
   , "FetchQuote": "stocks" / string segment
+  , "GetUser": "user" / noArgs
   }
 
 -- | `routing-duplex` has no existing codec for a `CommentId`, so we'll write our own. 
